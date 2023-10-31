@@ -1,0 +1,5 @@
+build/
+.vscode/
+ThirdParty/
+.vs/
+executable/
