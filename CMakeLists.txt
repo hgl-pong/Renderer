@@ -28,7 +28,14 @@ include/RenderModule.h
 src/RenderModule.cpp 
 include/Functions.h 
 include/Application.h
-src/Application.cpp)
+src/Application.cpp
+include/Module.h
+src/Module.cpp
+include/Manager.h
+src/Manager.cpp
+
+
+)
 add_executable(${MY_TARGET} ${SOURCE_FILES} )
 
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)

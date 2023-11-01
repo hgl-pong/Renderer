@@ -1,18 +1,20 @@
 #pragma once
 #include "physx/PxPhysicsAPI.h"
-
-class PhysicsModule
+#include "Module.h"
+#include <vector>
+class PhysicsModule : public Module
 {
 public:
     PhysicsModule();
-    ~PhysicsModule();
+    virtual ~PhysicsModule();
 
-    void Init();
-    void Update(float dt);
-    void Shutdown();
+    virtual void Init();
+    virtual void Update(float dt);
+    virtual void Shutdown();
 
-    physx::PxPhysics *GetPhysics() { return m_physics; }
-    physx::PxScene *GetScene() { return m_scene; }
+    physx::PxPhysics *GetPhysics();
+    std::vector<physx::PxConvexMesh *> GenerateConvexMeshes(std::vector<std::vector<physx::PxVec3>> &meshesVertices,
+                                                            std::vector<std::vector<physx::PxU32>> &meshesIndices);
 
 private:
     physx::PxDefaultAllocator m_allocator;
@@ -20,6 +22,5 @@ private:
     physx::PxFoundation *m_foundation = nullptr;
     physx::PxPhysics *m_physics = nullptr;
     physx::PxDefaultCpuDispatcher *m_dispatcher = nullptr;
-    physx::PxScene *m_scene = nullptr;
-    physx::PxMaterial *m_material = nullptr;
+    physx::PxPvd *m_pvd = nullptr;
 };

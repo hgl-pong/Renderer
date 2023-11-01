@@ -17,7 +17,7 @@ void Application::Init()
     m_physicsModule = new PhysicsModule();
     m_physicsModule->Init();
 
-    m_renderModule = new RenderModule();
+    m_renderModule = new RenderModule("RTDestruction");
     m_renderModule->Init();
 }
 
