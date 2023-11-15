@@ -9,26 +9,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 # set(CMAKE_TOOLCHAIN_FILE ${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
-set(SOURCE_FILES 
+file (GLOB SOURCE_FILES 
 main.cpp
-include/PhysicsModule.h
-src/PhysicsModule.cpp
-src/Scene.cpp
-include/Scene.h
-include/Actor.h
-src/Actor.cpp
-include/Component.h
-src/Component.cpp
-include/Model.h
-src/Model.cpp
-include/Types.h
-include/AssetLoader.h
-src/AssetLoader.cpp
-include/RenderModule.h
-src/RenderModule.cpp 
-include/Functions.h 
-include/Application.h
-src/Application.cpp)
+include/*.h
+src/*.cpp
+)
 add_executable(${MY_TARGET} ${SOURCE_FILES} )
 
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
