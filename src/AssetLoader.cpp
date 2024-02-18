@@ -25,7 +25,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
     {
         aiMesh *mesh = scene->mMeshes[i];
         auto &newMesh = model.m_meshes[i];
-        newMesh.m_vertices.resize(mesh->mNumVertices);
+        // newMesh.m_vertices.resize(mesh->mNumVertices);
         newMesh.m_indices.resize(mesh->mNumFaces * 3);
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
         {

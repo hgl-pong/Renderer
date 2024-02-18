@@ -24,9 +24,9 @@ void PhysicsModule::Update(float dt)
 
 void PhysicsModule::Shutdown()
 {
-    m_dispatcher->release();
-    m_physics->release();
-    m_foundation->release();
+    // m_dispatcher->release();
+    // m_physics->release();
+    // m_foundation->release();
 }
 
 // physx::PxPhysics *PhysicsModule::GetPhysics()
