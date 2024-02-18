@@ -30,7 +30,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
         {
             aiVector3D vertex = mesh->mVertices[j];
-            newMesh.m_vertices.push_back(physx::PxVec3(vertex.x, vertex.y, vertex.z));
+            // newMesh.m_vertices.push_back(physx::PxVec3(vertex.x, vertex.y, vertex.z));
         }
         for (uint32_t j = 0; j < mesh->mNumFaces; ++j)
         {

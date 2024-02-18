@@ -1,5 +1,5 @@
 #pragma once
-#include "physx/PxScene.h"
+// #include "physx/PxScene.h"
 #include <set>
 class Actor;
 class Scene
@@ -12,12 +12,12 @@ public:
     void Update(float dt);
     void Shutdown();
 
-    physx::PxScene *GetPhysicsScene() { return m_scene; }
+    // physx::PxScene *GetPhysicsScene() { return m_scene; }
 
     void AddActor(Actor *actor);
     void RemoveActor(Actor *actor);
 
 private:
-    physx::PxScene *m_scene = nullptr;
+    // physx::PxScene *m_scene = nullptr;
     std::set<Actor *> m_actors;
 };
