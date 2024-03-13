@@ -18,11 +18,11 @@ public:
 private:
     double m_DeltaTime;
 
-    std::chrono::steady_clock m_BaseTime;
-    std::chrono::steady_clock m_PausedTime;
-    std::chrono::steady_clock m_StopTime;
-    std::chrono::steady_clock m_PrevTime;
-    std::chrono::steady_clock m_CurrTime;
+    std::chrono::steady_clock::time_point m_BaseTime;
+    std::chrono::steady_clock::time_point m_PausedTime;
+    std::chrono::steady_clock::time_point m_StopTime;
+    std::chrono::steady_clock::time_point m_PrevTime;
+    std::chrono::steady_clock::time_point m_CurrTime;
 
     bool m_Stopped;
 };

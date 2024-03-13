@@ -6,6 +6,7 @@
 #include "RenderSystem/RenderSystem.h"
 #include <vulkan/vulkan.h>
 
+#define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
 class VKRenderSystem : public IRenderSystem
 {
 public:
@@ -74,18 +75,30 @@ private:
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Public//////////////////////////////////////////////////////////////////////////
 inline void VKRenderSystem::PreInitialize()
 {
-    _CreateInstance();
-    _SetupDebugMessenger();
-    _CreateSurface();
-    _PickPhysicalDevice();
-    _CreateLogicalDevice();
-    _CreateSwapChain();
-    _CreateImageViews();
-    _CreateRenderPass();
-    _CreateGraphicsPipeline();
-    _CreateFramebuffers();
-    _CreateCommandPool();
-    _CreateCommandBuffers();
+    bool bResult = true;
+    try
+    {
+        HASSERT(_CreateInstance());
+        HASSERT(_SetupDebugMessenger());
+        HASSERT(_CreateSurface());
+        HASSERT(_PickPhysicalDevice());
+        HASSERT(_CreateLogicalDevice());
+        HASSERT(_CreateSwapChain());
+        HASSERT(_CreateImageViews());
+        HASSERT(_CreateRenderPass());
+        HASSERT(_CreateGraphicsPipeline());
+        HASSERT(_CreateFramebuffers());
+        HASSERT(_CreateCommandPool());
+        HASSERT(_CreateCommandBuffers());
+    }
+    catch (const std::exception &e)
+    {
+        bResult = false;
+    }
+    if (!bResult)
+    {
+        Shutdown();
+    }
 }
 
 inline void VKRenderSystem::PostInitialize()
@@ -94,6 +107,28 @@ inline void VKRenderSystem::PostInitialize()
 
 inline void VKRenderSystem::Shutdown()
 {
+    if (m_bEnableDebugUtils)
+    {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr)
+            func(m_Instance, m_DebugMessenger, nullptr);
+    }
+    for (auto commandBuffer : m_CommandBuffers)
+        vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
+    vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+    for (auto framebuffer : m_SwapChainFramebuffers)
+        vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+    vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+    vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+    for (auto imageView : m_SwapChainImageViews)
+        vkDestroyImageView(m_Device, imageView, nullptr);
+    for (auto image : m_SwapChainImages)
+        vkDestroyImage(m_Device, image, nullptr);
+    vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
+    vkDestroyDevice(m_Device, nullptr);
+    vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+    vkDestroyInstance(m_Instance, nullptr);
 }
 
 inline void VKRenderSystem::BeginFrame()
@@ -174,13 +209,23 @@ inline bool VKRenderSystem::_PickPhysicalDevice()
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
 
+    auto IsDeviceSuitable = [](VkPhysicalDevice device)
+    {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+               deviceFeatures.geometryShader;
+    };
+
     for (const auto &device : devices)
     {
-        // if (_IsDeviceSuitable(device))
-        //{
-        //     m_PhysicalDevice = device;
-        //     break;
-        // }
+        if (IsDeviceSuitable(device))
+        {
+            m_PhysicalDevice = device;
+            break;
+        }
     }
 
     return m_PhysicalDevice != VK_NULL_HANDLE;
@@ -188,7 +233,70 @@ inline bool VKRenderSystem::_PickPhysicalDevice()
 
 inline bool VKRenderSystem::_CreateLogicalDevice()
 {
-    return false;
+    bool bResult = true;
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, queueFamilies.data());
+
+    uint32_t graphicsFamily = UINT_MAX;
+    uint32_t presentFamily = UINT_MAX;
+
+    for (uint32_t i = 0; i < queueFamilyCount; i++)
+    {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            graphicsFamily = i;
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, i, m_Surface, &presentSupport);
+        if (presentSupport)
+            presentFamily = i;
+        if (graphicsFamily != UINT_MAX && presentFamily != UINT_MAX)
+            break;
+    }
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {graphicsFamily, presentFamily};
+    float queuePriority = 1.0f;
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
+
+    VkPhysicalDeviceFeatures deviceFeature{};
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
+    createInfo.pEnabledFeatures = &deviceFeature;
+    createInfo.enabledExtensionCount = 0;
+    createInfo.ppEnabledExtensionNames = nullptr;
+    if (m_bEnableDebugUtils && _CheckValidationLayerSupport())
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
+        createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+    }
+    else
+    {
+        createInfo.enabledLayerCount = 0;
+        createInfo.ppEnabledLayerNames = nullptr;
+    }
+    try
+    {
+        HASSERT_VK(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device));
+    }
+    catch (const std::exception &e)
+    {
+        bResult = false;
+        return false;
+    }
+    vkGetDeviceQueue(m_Device, graphicsFamily, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, presentFamily, 0, &m_PresentQueue);
+    return bResult;
 }
 
 inline bool VKRenderSystem::_CreateSwapChain()
@@ -276,9 +384,27 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
     return VK_TRUE;
 };
 
+//////////////////////////////////////////////////////////////////////////RenderSystem Factory//////////////////////////////////////////////////////////////////////////
+
 inline IRenderSystem *CreateRenderSystem(RenderSystemType type)
 {
-    return new VKRenderSystem();
+    switch (RenderBufferType)
+    {
+    case RenderSystemType::Vulkan:
+        return new VKRenderSystem();
+        break;
+    case RenderSystemType::DirectX11:
+        return nullptr;
+        break;
+    case RenderSystemType::DirectX12:
+        return nullptr;
+        break;
+    case RenderSystemType::OpenGL:
+        return nullptr;
+        break;
+    default:
+        break;
+    }
 }
 
 inline void DestroyRenderSystem(IRenderSystem *pRenderSystem)

@@ -20,8 +20,7 @@ void EngineTimer::Start()
     auto startTime = std::chrono::steady_clock::now();
     if (m_Stopped)
     {
-        auto time = std::chrono::duration_cast<std::chrono::duration<double>>(startTime - m_StopTime);
-        m_PausedTime += time;
+        m_PausedTime += startTime - m_StopTime;
         m_PrevTime = startTime;
         m_StopTime = std::chrono::steady_clock::now();
         m_Stopped = false;
