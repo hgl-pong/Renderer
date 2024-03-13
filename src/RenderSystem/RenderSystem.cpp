@@ -33,18 +33,19 @@ private:
     static VkBool32 _DebugMessageCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+        void *pUserData);
+
 private:
-    VkInstance m_Instance=VK_NULL_HANDLE;
+    VkInstance m_Instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
     VkDevice m_Device = VK_NULL_HANDLE;
     VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
     VkQueue m_PresentQueue = VK_NULL_HANDLE;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
-    VkFormat m_SwapChainImageFormat= VK_FORMAT_UNDEFINED;
-    VkExtent2D m_SwapChainExtent{0,0};
+    VkFormat m_SwapChainImageFormat = VK_FORMAT_UNDEFINED;
+    VkExtent2D m_SwapChainExtent{0, 0};
     std::vector<VkImage> m_SwapChainImages;
     std::vector<VkImageView> m_SwapChainImageViews;
     VkRenderPass m_RenderPass = VK_NULL_HANDLE;
@@ -150,12 +151,12 @@ inline bool VKRenderSystem::_SetupDebugMessenger()
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = _DebugMessageCallback;
     createInfo.pUserData = nullptr;
-    
+
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr)
-		return func(m_Instance, &createInfo, nullptr, &m_DebugMessenger) == VK_SUCCESS;
-	else
-		return false;
+        return func(m_Instance, &createInfo, nullptr, &m_DebugMessenger) == VK_SUCCESS;
+    else
+        return false;
 }
 
 inline bool VKRenderSystem::_CreateSurface()
@@ -252,12 +253,9 @@ inline bool VKRenderSystem::_CheckValidationLayerSupport()
 VkBool32 VKRenderSystem::_DebugMessageCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData)
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+    void *pUserData)
 {
-    auto curr_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    char timeStr[100];
-    std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&curr_time));
     switch (messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
