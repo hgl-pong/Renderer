@@ -261,20 +261,16 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
     switch (messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        // Cyan color
-        std::cout << timeStr << "\033[36m [VERBOSE] \033[0m" << pCallbackData->pMessage << std::endl;
+        HLOG_VERBOSE(pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        // Green color
-        std::cout << timeStr << "\033[32m [INFO] \033[0m" << pCallbackData->pMessage << std::endl;
+        HLOG_INFO(pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        // Yellow color
-        std::cout << timeStr << "\033[33m [WARNING] \033[0m" << pCallbackData->pMessage << std::endl;
+        HLOG_WARNING(pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        // Red color
-        std::cerr << timeStr << "\033[31m [ERROR] \033[0m" << pCallbackData->pMessage << std::endl;
+        HLOG_ERROR(pCallbackData->pMessage);
         break;
     default:
         break;
