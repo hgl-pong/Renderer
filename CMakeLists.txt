@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.6)
 project(Renderer)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 set(MY_TARGET Renderer)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable)
@@ -12,7 +12,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 file (GLOB SOURCE_FILES 
 main.cpp
 include/*.h
+include/RenderSystem/*.h
 src/*.cpp
+src/RenderSystem/*.cpp
 )
 add_executable(${MY_TARGET} ${SOURCE_FILES} )
 
@@ -22,7 +24,8 @@ find_package(GLEW REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+find_package(Vulkan REQUIRED)
 
-target_include_directories(${MY_TARGET} PUBLIC ./include PRIVATE ${OPENGL_INCLUDE_DIR})
+target_include_directories(${MY_TARGET} PUBLIC ./include PRIVATE ${OPENGL_INCLUDE_DIR} )
 # Link the required libraries
-target_link_libraries(${MY_TARGET} PRIVATE ${OPENGL_LIBRARIES}  GLEW::GLEW glfw imgui::imgui assimp::assimp)
+target_link_libraries(${MY_TARGET} PRIVATE ${OPENGL_LIBRARIES}  Vulkan::Vulkan GLEW::GLEW glfw imgui::imgui assimp::assimp)
