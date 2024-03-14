@@ -13,16 +13,20 @@ file(GLOB SOURCE_FILES
     main.cpp
     include/*.h
     include/RenderSystem/*.h
+    include/RenderSystem/imgui/*.h
     src/*.cpp
     src/RenderSystem/*.cpp
+    src/RenderSystem/imgui/*.cpp
 )
 add_executable(${MY_TARGET} ${SOURCE_FILES})
+
+file(GLOB IMGUI_SOURCES ThirdParty/imgui/*.cpp)
+add_library(imgui STATIC ${IMGUI_SOURCES})
 
 # Add the required packages
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
@@ -31,8 +35,10 @@ find_package(Eigen3 CONFIG REQUIRED)
 target_include_directories(${MY_TARGET}
     PUBLIC
     ./include
+    ThirdParty/imgui
     PRIVATE
-    ${OPENGL_INCLUDE_DIR})
+    ${OPENGL_INCLUDE_DIR}
+    )
 
 # Link the required libraries
 target_link_libraries(${MY_TARGET}
@@ -41,7 +47,7 @@ target_link_libraries(${MY_TARGET}
     Vulkan::Vulkan
     GLEW::GLEW
     glfw
-    imgui::imgui
+    imgui
     assimp::assimp
     Eigen3::Eigen
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
