@@ -18,5 +18,10 @@
 #include <mutex>
 #include <chrono>
 
+// Third-party
+#include <Eigen/Eigen>
+#include <SDL2/SDL.h>
+
+// Custom
 #include "LogUtils.h"
 #include "Macro.h"

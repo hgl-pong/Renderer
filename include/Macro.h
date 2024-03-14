@@ -11,6 +11,7 @@
             std::abort();                                                                              \
         }                                                                                              \
     } while (false)
+#define HASSERT_LOG(condition, log) HASSERT(condition)
 #else
 #define HASSERT(condition)                        \
     do                                            \
@@ -19,5 +20,14 @@
         {                                         \
             throw std::runtime_error(#condition); \
         }                                         \
+    } while (false)
+
+#define HASSERT_LOG(condition, log)            \
+    do                                     \
+    {                                      \
+        if (!(condition))                  \
+        {                                  \
+            throw std::runtime_error(log); \
+        }                                  \
     } while (false)
 #endif

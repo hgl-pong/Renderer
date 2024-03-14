@@ -15,6 +15,7 @@ public:
     void Shutdown() override;
     void BeginFrame() override;
     void EndFrame() override;
+    void Clear(const Eigen::Vector4f &color) override;
 
 private:
     bool _CreateInstance();
@@ -136,6 +137,10 @@ inline void VKRenderSystem::BeginFrame()
 }
 
 inline void VKRenderSystem::EndFrame()
+{
+}
+
+inline void VKRenderSystem::Clear(const Eigen::Vector4f &color)
 {
 }
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Private//////////////////////////////////////////////////////////////////////////
@@ -301,6 +306,54 @@ inline bool VKRenderSystem::_CreateLogicalDevice()
 
 inline bool VKRenderSystem::_CreateSwapChain()
 {
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &capabilities);
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &formatCount, nullptr);
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &formatCount, formats.data());
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &presentModeCount, nullptr);
+    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &presentModeCount, presentModes.data());
+    VkSurfaceFormatKHR surfaceFormat = formats[0];
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    VkExtent2D extent = {0, 0};
+    if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+    {
+        surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    }
+    for (const auto &format : formats)
+    {
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            surfaceFormat = format;
+            break;
+        }
+    }
+    for (const auto &mode : presentModes)
+    {
+        if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
+            presentMode = mode;
+            break;
+        }
+    }
+    if (capabilities.currentExtent.width != UINT32_MAX)
+    {
+        extent = capabilities.currentExtent;
+    }
+    else
+    {
+        int width, height;
+        // glfwGetFramebufferSize(m_Window, &width, &height);
+
+        extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+        extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    }
+
     return false;
 }
 
