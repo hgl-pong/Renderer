@@ -1,0 +1,5 @@
+{
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake"
+    }
+}

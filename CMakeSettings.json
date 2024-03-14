@@ -4,12 +4,20 @@
       "name": "Debug",
       "generator": "Ninja",
       "configurationType": "Debug",
-      "inheritEnvironments": [ "msvc_x64" ],
+      "inheritEnvironments": [
+        "msvc_x64"
+      ],
       "buildRoot": "${projectDir}\\build\\${name}",
       "installRoot": "${projectDir}\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake"
+        }
+      ]
     },
     {
       "name": "Release",
@@ -19,7 +27,15 @@
       "installRoot": "${projectDir}\\install\\${name}",
       "cmakeCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x64" ]
+      "inheritEnvironments": [
+        "msvc_x64"
+      ],
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake"
+        }
+      ]
     }
   ]
 }

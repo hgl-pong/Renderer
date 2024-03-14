@@ -388,7 +388,7 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
 
 inline IRenderSystem *CreateRenderSystem(RenderSystemType type)
 {
-    switch (RenderBufferType)
+    switch (type)
     {
     case RenderSystemType::Vulkan:
         return new VKRenderSystem();
