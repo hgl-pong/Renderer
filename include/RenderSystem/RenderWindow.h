@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "RenderSystem/RenderSystem.h"
 
+class ImguiWindowsFactory;
 class RenderWindow
 {
 public:
@@ -36,6 +37,8 @@ public:
 private:
     std::shared_ptr<IRenderSystem> m_RenderSystem;
     std::shared_ptr<SDL_Window> m_Window;
+    std::shared_ptr<SDL_Renderer> m_Renderer;
+    std::shared_ptr<ImguiWindowsFactory> m_ImguiWindowsFactory;
     std::string m_Title;
     int m_Width;
     int m_Height;

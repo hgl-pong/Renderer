@@ -1,5 +1,13 @@
 #pragma once
 #include "pch.h"
+enum class RenderSystemType
+{
+    Vulkan,
+    DirectX11,
+    DirectX12,
+    OpenGL,
+};
+
 enum class RenderShaderType
 {
     Vertex,
@@ -80,6 +88,7 @@ public:
     virtual void BeginFrame() = 0;
     virtual void EndFrame() = 0;
     virtual void Clear(const Eigen::Vector4f &color) = 0;
+    virtual RenderSystemType GetRenderSystemType() const = 0;
 
     // virtual IRenderShader *CreateShader() = 0;
     // virtual IRenderState *CreateRenderState() = 0;
@@ -94,13 +103,6 @@ public:
     // virtual void DestroyUint(IRenderUint *pUint) = 0;
 };
 
-enum class RenderSystemType
-{
-    Vulkan,
-    DirectX11,
-    DirectX12,
-    OpenGL,
-};
 class IRenderWindow
 {
 public:

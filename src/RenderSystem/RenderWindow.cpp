@@ -1,6 +1,78 @@
 #include "pch.h"
 #include "RenderSystem/RenderWindow.h"
 
+class ImguiWindowCreateInfo
+{
+};
+
+class ImguiWindowsFactory
+{
+public:
+    ImguiWindowsFactory(std::shared_ptr<SDL_Window> &window, std::shared_ptr<SDL_Renderer> &renderer)
+    {
+        m_Window = window;
+        m_Renderer = renderer;
+    }
+    void SetUp()
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO &io = ImGui::GetIO();
+        (void)io;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplSDL2_InitForSDLRenderer(m_Window.get(), m_Renderer.get());
+        ImGui_ImplSDLRenderer2_Init(m_Renderer.get());
+    }
+
+    void ShutDown()
+    {
+        ImGui_ImplSDLRenderer2_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+    }
+
+    void ProcessEvents(const SDL_Event *event)
+    {
+        ImGui_ImplSDL2_ProcessEvent(event);
+    }
+
+    void RenderWindows()
+    {
+        ImGuiIO &io = ImGui::GetIO();
+        (void)io;
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
+        ImGui::ShowDemoWindow();
+
+        ImGui::Render();
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            SDL_Window *backup_current_window = SDL_GL_GetCurrentWindow();
+            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+        }
+        SDL_RenderSetScale(m_Renderer.get(), io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
+        SDL_RenderPresent(m_Renderer.get());
+    }
+
+private:
+    std::shared_ptr<SDL_Window> m_Window;
+    std::shared_ptr<SDL_Renderer> m_Renderer;
+    std::vector<ImguiWindowCreateInfo> m_Windows;
+};
+
 RenderWindow::RenderWindow()
     : m_RenderSystem(nullptr),
       m_Window(nullptr),
@@ -28,9 +100,19 @@ void RenderWindow::CreateRenderWindow(const std::string &title, int width, int h
     m_Height = height;
     try
     {
-        HASSERT_LOG(SDL_Init(SDL_INIT_VIDEO) == 0, "SDL_Init failed");
-        m_Window = std::shared_ptr<SDL_Window>(SDL_CreateWindow(m_Title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_Width, m_Height, SDL_WINDOW_SHOWN), SDL_DestroyWindow);
+        HASSERT_LOG(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) == 0, "SDL_Init failed");
+        // From 2.0.18: Enable native IME.
+#ifdef SDL_HINT_IME_SHOW_UI
+        SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+#endif
+        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        m_Window = std::shared_ptr<SDL_Window>(SDL_CreateWindow(m_Title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_Width, m_Height, window_flags), SDL_DestroyWindow);
         HASSERT_LOG(m_Window != nullptr, "SDL_CreateWindow failed");
+        m_Renderer = std::shared_ptr<SDL_Renderer>(SDL_CreateRenderer(m_Window.get(), -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED), SDL_DestroyRenderer);
+        HASSERT_LOG(m_Renderer != nullptr, "SDL_CreateRenderer failed");
+        m_ImguiWindowsFactory = std::shared_ptr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window, m_Renderer));
+        HASSERT_LOG(m_ImguiWindowsFactory != nullptr, "Create ImguiWindowsFactory failed");
+        m_ImguiWindowsFactory->SetUp();
     }
     catch (const std::exception &e)
     {
@@ -44,6 +126,16 @@ void RenderWindow::DestroyRenderWindow()
     {
         SDL_DestroyWindow(m_Window.get());
         m_Window = nullptr;
+    }
+    if (m_ImguiWindowsFactory != nullptr)
+    {
+        m_ImguiWindowsFactory->ShutDown();
+        m_ImguiWindowsFactory = nullptr;
+    }
+    if (m_Renderer != nullptr)
+    {
+        SDL_DestroyRenderer(m_Renderer.get());
+        m_Renderer = nullptr;
     }
     SDL_Quit();
 }
@@ -122,7 +214,11 @@ void RenderWindow::Clear()
 
     if (m_Window == nullptr)
         return;
-    SDL_FillRect(SDL_GetWindowSurface(m_Window.get()), nullptr, SDL_MapRGB(SDL_GetWindowSurface(m_Window.get())->format, 125, 125, 0));
+
+    SDL_SetRenderDrawColor(m_Renderer.get(), (Uint8)(m_ClearColor[0] * 255),
+                           (Uint8)(m_ClearColor[1] * 255), (Uint8)(m_ClearColor[2] * 255),
+                           (Uint8)(m_ClearColor[3] * 255));
+    SDL_RenderClear(m_Renderer.get());
 }
 
 void RenderWindow::Display()
@@ -134,6 +230,8 @@ void RenderWindow::Display()
         m_RenderSystem->BeginFrame();
         m_RenderSystem->EndFrame();
     }
+    if (m_ImguiWindowsFactory != nullptr)
+        m_ImguiWindowsFactory->RenderWindows();
     SDL_UpdateWindowSurface(m_Window.get());
 }
 
@@ -144,6 +242,8 @@ bool RenderWindow::IsOpen() const
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0)
     {
+        if (m_ImguiWindowsFactory != nullptr)
+            m_ImguiWindowsFactory->ProcessEvents(&e);
         // 用户请求退出
         if (e.type == SDL_QUIT)
         {

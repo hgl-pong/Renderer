@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
-class VKRenderSystem : public IRenderSystem
+class VKRenderSystem : virtual public IRenderSystem
 {
 public:
     void PreInitialize() override;
@@ -16,6 +16,7 @@ public:
     void BeginFrame() override;
     void EndFrame() override;
     void Clear(const Eigen::Vector4f &color) override;
+    RenderSystemType GetRenderSystemType() const override { return RenderSystemType::Vulkan; }
 
 private:
     bool _CreateInstance();

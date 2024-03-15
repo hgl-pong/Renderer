@@ -22,6 +22,10 @@
 #include <Eigen/Eigen>
 #include <SDL2/SDL.h>
 
+#include "imgui.h"
+#include "RenderSystem/imgui/imgui_impl_sdl2.h"
+#include "RenderSystem/imgui/imgui_impl_sdlrenderer2.h"
+
 // Custom
 #include "LogUtils.h"
 #include "Macro.h"
