@@ -13,11 +13,12 @@ Renderer 是一个简易的渲染器
 ```bash
 git clone https://github.com/yourusername/Renderer.git
 cd Renderer
+git submodule update --init
 ```
 
 ## 安装依赖
 
-Renderer 依赖于以下库：OpenGL, GLEW, GLFW3, ImGui, Assimp 和 Vulkan。你可以通过以下 vcpkg 命令来安装这些依赖（除了 OpenGL 和 Vulkan 通常系统自带外）：
+Renderer 依赖于以下库：OpenGL, GLEW, GLFW3, SDL2, Eigen3, Assimp 和 Vulkan。你可以通过以下 vcpkg 命令来安装这些依赖：
 
 ```bash
 vcpkg install glew glfw3 imgui assimp vulkan
