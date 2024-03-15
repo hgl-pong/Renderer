@@ -48,6 +48,7 @@ vcpkg install glew glfw3 sdl2 assimp vulkan
     在环境变量中添加`VCPKG_PATH`
 
     ![vcpkg_path](./img/vcpkg_path.jpg)
+    
     Visual Studio Code相比Visual Studio需要额外安装CMakeTools插件
 
 ## 使用方法
