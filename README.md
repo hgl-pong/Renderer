@@ -11,7 +11,7 @@ Renderer 是一个简易的渲染器
 ## 安装指南
 
 ```bash
-git clone https://github.com/yourusername/Renderer.git
+git clone https://github.com/hgl-pong/Renderer.git
 cd Renderer
 git submodule update --init
 ```
@@ -48,7 +48,7 @@ vcpkg install glew glfw3 sdl2 assimp vulkan
     在环境变量中添加`VCPKG_PATH`
 
     ![vcpkg_path](./img/vcpkg_path.jpg)
-    
+
     Visual Studio Code相比Visual Studio需要额外安装CMakeTools插件
 
 ## 使用方法
