@@ -13,9 +13,11 @@ file(GLOB SOURCE_FILES
     main.cpp
     include/*.h
     include/RenderSystem/*.h
-    include/RenderSystem/imgui/*.h
+    src/*.h
     src/*.cpp
+    src/RenderSystem/*.h
     src/RenderSystem/*.cpp
+    src/RenderSystem/imgui/*.h
     src/RenderSystem/imgui/*.cpp
 )
 add_executable(${MY_TARGET} ${SOURCE_FILES})
@@ -35,6 +37,7 @@ find_package(Eigen3 CONFIG REQUIRED)
 target_include_directories(${MY_TARGET}
     PUBLIC
     ./include
+    ./src
     ThirdParty/imgui
     PRIVATE
     ${OPENGL_INCLUDE_DIR}

@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-#include "RenderSystem/RenderSystem.h"
+#include "RenderSystem/RenderSystemInterface.h"
 
 class ImguiWindowsFactory;
 class RenderWindow

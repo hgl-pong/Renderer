@@ -79,7 +79,7 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-#include "RenderSystem/imgui/imgui_impl_sdl2.h"
+#include "imgui_impl_sdl2.h"
 
 // Clang warnings with -Weverything
 #if defined(__clang__)

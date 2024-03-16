@@ -19,6 +19,8 @@
 #include <chrono>
 
 // Third-party
+#include <vulkan/vulkan.h>
+
 #include <Eigen/Eigen>
 #include <SDL2/SDL.h>
 

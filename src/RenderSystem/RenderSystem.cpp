@@ -1,78 +1,11 @@
 #include "pch.h"
-#include "RenderSystem/RenderShader.h"
-#include "RenderSystem/RenderUnit.h"
-#include "RenderSystem/RenderTexture.h"
-#include "RenderSystem/RenderBuffer.h"
-#include "RenderSystem/RenderSystem.h"
-#include <vulkan/vulkan.h>
+#include "RenderShader.h"
+#include "RenderUnit.h"
+#include "RenderTexture.h"
+#include "RenderBuffer.h"
+#include "RenderSystem.h"
 
 #define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
-class VKRenderSystem : virtual public IRenderSystem
-{
-public:
-    void PreInitialize() override;
-    void PostInitialize() override;
-    void Shutdown() override;
-    void BeginFrame() override;
-    void EndFrame() override;
-    void Clear(const Eigen::Vector4f &color) override;
-    RenderSystemType GetRenderSystemType() const override { return RenderSystemType::Vulkan; }
-
-private:
-    bool _CreateInstance();
-    bool _SetupDebugMessenger();
-    bool _CreateSurface();
-    bool _PickPhysicalDevice();
-    bool _CreateLogicalDevice();
-    bool _CreateSwapChain();
-    bool _CreateImageViews();
-    bool _CreateRenderPass();
-    bool _CreateGraphicsPipeline();
-    bool _CreateFramebuffers();
-    bool _CreateCommandPool();
-    bool _CreateCommandBuffers();
-
-    bool _CheckValidationLayerSupport();
-    static VkBool32 _DebugMessageCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData);
-
-private:
-    VkInstance m_Instance = VK_NULL_HANDLE;
-    VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
-    VkDevice m_Device = VK_NULL_HANDLE;
-    VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
-    VkQueue m_PresentQueue = VK_NULL_HANDLE;
-    VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-    VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
-    VkFormat m_SwapChainImageFormat = VK_FORMAT_UNDEFINED;
-    VkExtent2D m_SwapChainExtent{0, 0};
-    std::vector<VkImage> m_SwapChainImages;
-    std::vector<VkImageView> m_SwapChainImageViews;
-    VkRenderPass m_RenderPass = VK_NULL_HANDLE;
-    VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-    VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
-    std::vector<VkFramebuffer> m_SwapChainFramebuffers;
-    VkCommandPool m_CommandPool = VK_NULL_HANDLE;
-    std::vector<VkCommandBuffer> m_CommandBuffers;
-    VkSemaphore m_ImageAvailableSemaphore = VK_NULL_HANDLE;
-    VkSemaphore m_RenderFinishedSemaphore = VK_NULL_HANDLE;
-    std::vector<VkFence> m_InFlightFences;
-    std::vector<VkFence> m_ImagesInFlight;
-    size_t m_CurrentFrame = 0;
-    bool m_FramebufferResized = false;
-
-#if _DEBUG
-    bool m_bEnableDebugUtils = true;
-#else
-    bool m_bEnableDebugUtils = false;
-#endif
-    std::vector<const char *> m_ValidationLayers = {
-        "VK_LAYER_KHRONOS_validation"};
-    VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
-};
 
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Public//////////////////////////////////////////////////////////////////////////
 inline void VKRenderSystem::PreInitialize()
@@ -440,7 +373,7 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
 
 //////////////////////////////////////////////////////////////////////////RenderSystem Factory//////////////////////////////////////////////////////////////////////////
 
-inline IRenderSystem *CreateRenderSystem(RenderSystemType type)
+IRenderSystem *CreateRenderSystem(const RenderSystemType& type)
 {
     switch (type)
     {
@@ -461,7 +394,7 @@ inline IRenderSystem *CreateRenderSystem(RenderSystemType type)
     }
 }
 
-inline void DestroyRenderSystem(IRenderSystem *pRenderSystem)
+void DestroyRenderSystem(IRenderSystem *pRenderSystem)
 {
     delete pRenderSystem;
 }

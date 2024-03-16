@@ -1,5 +1,13 @@
 #pragma once
 #include "pch.h"
+class IRenderSystem;
+class IRenderShader;
+class IRenderState;
+class IRenderTexture;
+class IRenderBuffer;
+class IRenderUnit;
+class IRenderWindow;
+
 enum class RenderSystemType
 {
     Vulkan,
@@ -18,7 +26,7 @@ enum class RenderShaderType
     Domain,
 };
 
-class IRenderShader
+class HAPI IRenderShader
 {
 public:
 };
@@ -49,9 +57,13 @@ enum class RenderTextureType
     Texture2DMultiSampleArray,
 };
 
-class IRenderTexture
+class HAPI IRenderTexture
 {
 public:
+    virtual bool Init(IRenderSystem *renderSystem, uint32_t width, uint32_t height, RenderTextureType type) = 0;
+    virtual uint32_t GetWidth() const = 0;
+    virtual uint32_t GetHeight() const = 0;
+    virtual RenderTextureType GetType() const = 0;
 };
 enum class RenderBufferType
 {
@@ -67,19 +79,19 @@ class IRenderBuffer
 public:
 };
 
-enum class RenderUintType
+enum class RenderUnitType
 {
     Fence,
     Event,
     Query,
 };
 
-class IRenderUint
+class HAPI IRenderUnit
 {
 public:
 };
 
-class IRenderSystem
+class HAPI IRenderSystem
 {
 public:
     virtual void PreInitialize() = 0;
@@ -103,7 +115,17 @@ public:
     // virtual void DestroyUint(IRenderUint *pUint) = 0;
 };
 
-class IRenderWindow
+class RenderSystemResource
+{
+public:
+    virtual ~RenderSystemResource() {}
+    uint32_t GetResourceID() const { return m_ID; }
+
+protected:
+    uint32_t m_ID;
+};
+
+class HAPI IRenderWindow
 {
 public:
     virtual void CreateRenderWindow(const std::string &title, int width, int height) = 0;
@@ -130,5 +152,5 @@ public:
     virtual void BindRenderSystem(IRenderSystem *renderSystem) = 0;
 };
 
-inline IRenderSystem *CreateRenderSystem(RenderSystemType type);
-inline void DestroyRenderSystem(IRenderSystem *pRenderSystem);
+HAPI IRenderSystem *CreateRenderSystem(const RenderSystemType &type);
+HAPI void DestroyRenderSystem(IRenderSystem *pRenderSystem);

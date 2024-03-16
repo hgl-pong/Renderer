@@ -29,7 +29,7 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-#include "RenderSystem/imgui/imgui_impl_sdlrenderer2.h"
+#include "imgui_impl_sdlrenderer2.h"
 #include <stdint.h>     // intptr_t
 
 // Clang warnings with -Weverything

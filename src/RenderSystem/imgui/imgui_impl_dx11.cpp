@@ -35,7 +35,7 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-#include "RenderSystem/imgui/imgui_impl_dx11.h"
+#include "imgui_impl_dx11.h"
 
 // DirectX
 #include <stdio.h>

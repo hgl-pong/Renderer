@@ -1,5 +1,13 @@
 #pragma once
-
+#if defined(_WIN32) || defined(__WIN32__)
+#ifdef HLIB_IMPORTS
+#define HAPI __declspec(dllimport)
+#else
+#define HAPI __declspec(dllexport)
+#endif
+#else
+#define HAPI
+#endif
 #if _DEBUG
 #define HASSERT(condition)                                                                             \
     do                                                                                                 \
@@ -22,7 +30,7 @@
         }                                         \
     } while (false)
 
-#define HASSERT_LOG(condition, log)            \
+#define HASSERT_LOG(condition, log)        \
     do                                     \
     {                                      \
         if (!(condition))                  \
@@ -31,3 +39,9 @@
         }                                  \
     } while (false)
 #endif
+#define VK_RELEASE(object, deleter, device) \
+    if (object != VK_NULL_HANDLE)           \
+    {                                       \
+        deleter(device, object, nullptr);   \
+        object = VK_NULL_HANDLE;            \
+    }
