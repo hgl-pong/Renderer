@@ -1,17 +1,7 @@
-﻿#include "Engine/EngineInterface.h"
+﻿#include "Engine/Window.h"
 
 int main(int argc, char *argv[])
 {
-	IWindow* window = CreateRenderWindow();
-	if (window == nullptr)
-		return 0;
-	window->CreateRenderWindow("Renderer", 800, 600);
-	while (window->IsOpen())
-	{
-		window->Display();
-		window->Clear();
-	}
-	window->DestroyRenderWindow();
-	delete window;
+	TestEditorWindow();
 	return 1;
 }

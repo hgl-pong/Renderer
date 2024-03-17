@@ -29,5 +29,7 @@
 #include "RenderSystem/imgui/imgui_impl_sdlrenderer2.h"
 
 // Custom
+#include "Types.h"
+#include "Functions.h"
 #include "LogUtils.h"
 #include "Macro.h"

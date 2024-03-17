@@ -1,12 +1,10 @@
 #pragma once
-#include "Common/pch.h"
-#include "Engine/EngineInterface.h"
 class IRenderShader;
 class IRenderState;
 class IRenderTexture;
 class IRenderBuffer;
 class IRenderUnit;
-class IRenderWindow;
+class IRenderSystem;
 
 enum class RenderShaderType
 {
@@ -151,6 +149,38 @@ public:
 
 protected:
     uint32_t m_ID;
+};
+
+enum class RenderSystemType
+{
+    Vulkan,
+    DirectX11,
+    DirectX12,
+    OpenGL,
+};
+
+class HAPI IRenderSystem
+{
+public:
+    virtual void PreInitialize() = 0;
+    virtual void PostInitialize() = 0;
+    virtual void Shutdown() = 0;
+    virtual void BeginFrame() = 0;
+    virtual void EndFrame() = 0;
+    virtual void Clear(const Eigen::Vector4f &color) = 0;
+    virtual RenderSystemType GetRenderSystemType() const = 0;
+
+    // virtual IRenderShader *CreateShader() = 0;
+    // virtual IRenderState *CreateRenderState() = 0;
+    // virtual IRenderTexture *CreateTexture() = 0;
+    // virtual IRenderBuffer *CreateBuffer() = 0;
+    // virtual IRenderUint *CreateUint() = 0;
+
+    // virtual void DestroyShader(IRenderShader *pShader) = 0;
+    // virtual void DestroyRenderState(IRenderState *pRenderState) = 0;
+    // virtual void DestroyTexture(IRenderTexture *pTexture) = 0;
+    // virtual void DestroyBuffer(IRenderBuffer *pBuffer) = 0;
+    // virtual void DestroyUint(IRenderUint *pUint) = 0;
 };
 
 HAPI IRenderSystem *CreateRenderSystem(const RenderSystemType &type);

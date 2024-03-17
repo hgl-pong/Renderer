@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/pch.h"
-#include "RenderSystem/RenderSystemInterface.h"
+#include "Engine/RenderSystemInterface.h"
 class RenderSystemResourceIDPool
 {
 public:

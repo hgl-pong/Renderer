@@ -1,13 +1,12 @@
 #pragma once
 #include "Common/pch.h"
-#include "RenderSystem/RenderSystemInterface.h"
+#include "Engine/RenderSystemInterface.h"
 
-class VKRenderShader : virtual public IRenderShader,public RenderSystemResource
+class VKRenderShader : virtual public IRenderShader, public RenderSystemResource
 {
 public:
     VKRenderShader();
     ~VKRenderShader();
 
 private:
-    
 };

@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/pch.h"
-#include "RenderSystem/RenderSystemInterface.h"
+#include "Engine/EngineInterface.h"
 
 #define EDITOR_MODE
 
@@ -12,19 +12,19 @@ public:
     ~EditorWindow();
 
 public:
-    void CreateRenderWindow(const std::string &title, int width, int height)override;
-    void DestroyRenderWindow()override;
-    void SetTitle(const std::string &title)override;
-    void SetSize(int width, int height)override;
-    void SetVSync(bool vsync)override;
-    void SetFullscreen(bool fullscreen)override;
-    void SetVisible(bool visible)override;
-    void SetMouseCursorVisible(bool visible)override;
-    void SetPosition(int x, int y)override;
-    void SetIcon(const std::string &iconPath)override;
-    void SetClearColor(const Eigen::Vector4f &color)override;
-    void Clear()override;
-    void Display()override;
+    void CreateRenderWindow(const std::string &title, int width, int height) override;
+    void DestroyRenderWindow() override;
+    void SetTitle(const std::string &title) override;
+    void SetSize(int width, int height) override;
+    void SetVSync(bool vsync) override;
+    void SetFullscreen(bool fullscreen) override;
+    void SetVisible(bool visible) override;
+    void SetMouseCursorVisible(bool visible) override;
+    void SetPosition(int x, int y) override;
+    void SetIcon(const std::string &iconPath) override;
+    void SetClearColor(const Eigen::Vector4f &color) override;
+    void Clear() override;
+    void Display() override;
     bool IsOpen() const override;
     int GetWidth() const override;
     int GetHeight() const override;
@@ -33,7 +33,7 @@ public:
     bool IsVisible() const override;
     bool IsMouseCursorVisible() const override;
     Eigen::Vector2f GetPosition() const override;
-    void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)override;
+    void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem) override;
 
 public:
 private:
@@ -51,3 +51,45 @@ private:
     Eigen::Vector4f m_ClearColor;
     Eigen::Vector2f m_Position;
 };
+
+#if MODULE_TEST
+inline bool TestEditorWindow()
+{
+    EditorWindow window;
+    window.CreateRenderWindow("Test", 800, 600);
+    window.SetVSync(true);
+    window.SetFullscreen(false);
+    window.SetVisible(true);
+    window.SetMouseCursorVisible(true);
+    window.SetPosition(100, 100);
+    window.SetIcon("icon.png");
+    window.SetClearColor(Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+    window.Clear();
+    window.Display();
+    bool isOpen = window.IsOpen();
+    HLOG_INFO("Window Is Open: %d\n", isOpen);
+    int width = window.GetWidth();
+    HLOG_INFO("Window Width: %d\n", width);
+    int height = window.GetHeight();
+    HLOG_INFO("Window Height: %d\n", height);
+    bool vsync = window.IsVSync();
+    HLOG_INFO("Window VSync: %d\n", vsync);
+    bool fullscreen = window.IsFullscreen();
+    HLOG_INFO("Window Is Fullscreen: %d\n", fullscreen);
+    bool visible = window.IsVisible();
+    HLOG_INFO("Window Is Visible: %d\n", visible);
+    bool mouseCursorVisible = window.IsMouseCursorVisible();
+    HLOG_INFO("Window Mouse Cursor Visible: %d\n", mouseCursorVisible);
+    Eigen::Vector2f position = window.GetPosition();
+    HLOG_INFO("Window Position: (%f, %f)\n", position.x(), position.y());
+    while (window.IsOpen())
+    {
+        window.Clear();
+        window.Display();
+        // Eigen::Vector2f position = window.GetPosition();
+        // printf("Position: (%f, %f)\n", position.x(), position.y());
+    }
+    window.DestroyRenderWindow();
+    return true;
+}
+#endif

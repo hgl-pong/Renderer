@@ -1,7 +1,7 @@
 #pragma once
 #include "Types.h"
 #include <cstdlib>
-
+#define MODULE_TEST 1
 inline Color RandomColor()
 {
     Color color;

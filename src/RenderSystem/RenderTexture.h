@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/pch.h"
-#include "RenderSystem/RenderSystemInterface.h"
+#include "Engine/RenderSystemInterface.h"
 
 class VKRenderSystem;
 template <typename DataType>
@@ -47,6 +47,41 @@ public:
     }
 
     bool BindToPipeline(VkCommandBuffer commandBuffer, uint32_t binding, VkDescriptorSet descriptorSet, VkPipelineLayout pipelineLayout, uint32_t setIndex, VkImageLayout layout) const
+    {
+        return false;
+    }
+
+    bool ExportToImage(const std::string &path) const
+    {
+        return false;
+    }
+
+    bool ImportFromImage(const std::string &path) const
+    {
+        return false;
+    }
+
+    bool GenerateMipmaps() const
+    {
+        return false;
+    }
+
+    bool Resize(uint32_t width, uint32_t height) const
+    {
+        return false;
+    }
+
+    bool CopyFrom(const IRenderTexture *src) const
+    {
+        return false;
+    }
+
+    bool ExportData(std::shared_ptr<DataType> &data) const
+    {
+        return false;
+    }
+
+    bool ImportData(const std::shared_ptr<DataType> &data)
     {
         return false;
     }
