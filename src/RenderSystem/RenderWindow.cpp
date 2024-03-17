@@ -1,8 +1,53 @@
-#include "pch.h"
+#include "Common/pch.h"
 #include "RenderWindow.h"
 
-class ImguiWindowCreateInfo
+IRenderWindow *CreateRenderWindow()
 {
+#ifdef EDITOR_MODE
+    return new RenderEditorWindow();
+#else
+    return nullptr;
+#endif
+}
+
+enum class ImguiWindowType
+{
+    GameView,
+};
+
+class ImguiWindow
+{
+public:
+    virtual void Render() = 0;
+    virtual ImguiWindowType GetType() = 0;
+    virtual void SetOpen(bool open) { m_IsOpen = open; }
+
+protected:
+    std::string m_Title;
+    bool m_IsOpen = true;
+};
+
+class ImguiGameViewWindow : virtual public ImguiWindow
+{
+public:
+    ImguiGameViewWindow()
+    {
+        m_Title = "GameView";
+    }
+    void Render() override
+    {
+        if (!m_IsOpen)
+            return;
+        ImGui::Begin(m_Title.c_str(), &m_IsOpen);
+        ImVec2 size = ImGui::GetContentRegionAvail();
+        // ImGui::Image((void *)m_TextureID, size, ImVec2(0, 1), ImVec2(1, 0));
+
+        ImGui::End();
+    }
+    ImguiWindowType GetType() override
+    {
+        return ImguiWindowType::GameView;
+    }
 };
 
 class ImguiWindowsFactory
@@ -52,6 +97,10 @@ public:
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
         ImGui::ShowDemoWindow();
+        for (auto &window : m_Windows)
+        {
+            window->Render();
+        }
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -67,13 +116,35 @@ public:
         SDL_RenderPresent(m_Renderer.get());
     }
 
+    ImguiWindow *CreateGameViewWindow()
+    {
+        for (auto &window : m_Windows)
+        {
+            if (window->GetType() == ImguiWindowType::GameView)
+                return window.get();
+        }
+        m_Windows.push_back(std::shared_ptr<ImguiWindow>(new ImguiGameViewWindow()));
+    }
+
+    void DestroyGameViewWindow()
+    {
+        for (auto iter = m_Windows.begin(); iter != m_Windows.end(); ++iter)
+        {
+            if ((*iter)->GetType() == ImguiWindowType::GameView)
+            {
+                m_Windows.erase(iter);
+                return;
+            }
+        }
+    }
+
 private:
     std::shared_ptr<SDL_Window> m_Window;
     std::shared_ptr<SDL_Renderer> m_Renderer;
-    std::vector<ImguiWindowCreateInfo> m_Windows;
+    std::vector<std::shared_ptr<ImguiWindow>> m_Windows;
 };
 
-RenderWindow::RenderWindow()
+RenderEditorWindow::RenderEditorWindow()
     : m_RenderSystem(nullptr),
       m_Window(nullptr),
       m_Title(""),
@@ -88,12 +159,12 @@ RenderWindow::RenderWindow()
 {
 }
 
-RenderWindow::~RenderWindow()
+RenderEditorWindow::~RenderEditorWindow()
 {
     DestroyRenderWindow();
 }
 
-void RenderWindow::CreateRenderWindow(const std::string &title, int width, int height)
+void RenderEditorWindow::CreateRenderWindow(const std::string &title, int width, int height)
 {
     m_Title = title;
     m_Width = width;
@@ -113,6 +184,7 @@ void RenderWindow::CreateRenderWindow(const std::string &title, int width, int h
         m_ImguiWindowsFactory = std::shared_ptr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window, m_Renderer));
         HASSERT_LOG(m_ImguiWindowsFactory != nullptr, "Create ImguiWindowsFactory failed");
         m_ImguiWindowsFactory->SetUp();
+        m_ImguiWindowsFactory->CreateGameViewWindow();
     }
     catch (const std::exception &e)
     {
@@ -120,7 +192,7 @@ void RenderWindow::CreateRenderWindow(const std::string &title, int width, int h
     }
 }
 
-void RenderWindow::DestroyRenderWindow()
+void RenderEditorWindow::DestroyRenderWindow()
 {
     if (m_Window != nullptr)
     {
@@ -140,7 +212,7 @@ void RenderWindow::DestroyRenderWindow()
     SDL_Quit();
 }
 
-void RenderWindow::SetTitle(const std::string &title)
+void RenderEditorWindow::SetTitle(const std::string &title)
 {
     if (m_Window == nullptr)
         return;
@@ -148,7 +220,7 @@ void RenderWindow::SetTitle(const std::string &title)
     SDL_SetWindowTitle(m_Window.get(), m_Title.c_str());
 }
 
-void RenderWindow::SetSize(int width, int height)
+void RenderEditorWindow::SetSize(int width, int height)
 {
     if (m_Window == nullptr)
         return;
@@ -157,7 +229,7 @@ void RenderWindow::SetSize(int width, int height)
     SDL_SetWindowSize(m_Window.get(), m_Width, m_Height);
 }
 
-void RenderWindow::SetVSync(bool vsync)
+void RenderEditorWindow::SetVSync(bool vsync)
 {
     if (m_Window == nullptr)
         return;
@@ -165,7 +237,7 @@ void RenderWindow::SetVSync(bool vsync)
     SDL_GL_SetSwapInterval(m_VSync ? 1 : 0);
 }
 
-void RenderWindow::SetFullscreen(bool fullscreen)
+void RenderEditorWindow::SetFullscreen(bool fullscreen)
 {
     if (m_Window == nullptr)
         return;
@@ -173,7 +245,7 @@ void RenderWindow::SetFullscreen(bool fullscreen)
     SDL_SetWindowFullscreen(m_Window.get(), m_FullsScreen ? SDL_WINDOW_FULLSCREEN : 0);
 }
 
-void RenderWindow::SetVisible(bool visible)
+void RenderEditorWindow::SetVisible(bool visible)
 {
     if (m_Window == nullptr)
         return;
@@ -181,7 +253,7 @@ void RenderWindow::SetVisible(bool visible)
     SDL_ShowWindow(m_Window.get());
 }
 
-void RenderWindow::SetMouseCursorVisible(bool visible)
+void RenderEditorWindow::SetMouseCursorVisible(bool visible)
 {
     if (m_Window == nullptr)
         return;
@@ -189,25 +261,25 @@ void RenderWindow::SetMouseCursorVisible(bool visible)
     SDL_ShowCursor(m_MouseCursorVisible ? 1 : 0);
 }
 
-void RenderWindow::SetPosition(int x, int y)
+void RenderEditorWindow::SetPosition(int x, int y)
 {
     if (m_Window == nullptr)
         return;
     m_Position = Eigen::Vector2f(x, y);
 }
 
-void RenderWindow::SetIcon(const std::string &iconPath)
+void RenderEditorWindow::SetIcon(const std::string &iconPath)
 {
     if (m_Window == nullptr)
         return;
 }
 
-void RenderWindow::SetClearColor(const Eigen::Vector4f &color)
+void RenderEditorWindow::SetClearColor(const Eigen::Vector4f &color)
 {
     m_ClearColor = color;
 }
 
-void RenderWindow::Clear()
+void RenderEditorWindow::Clear()
 {
     if (m_RenderSystem)
         m_RenderSystem->Clear(m_ClearColor);
@@ -221,7 +293,7 @@ void RenderWindow::Clear()
     SDL_RenderClear(m_Renderer.get());
 }
 
-void RenderWindow::Display()
+void RenderEditorWindow::Display()
 {
     if (m_Window == nullptr)
         return;
@@ -235,7 +307,7 @@ void RenderWindow::Display()
     SDL_UpdateWindowSurface(m_Window.get());
 }
 
-bool RenderWindow::IsOpen() const
+bool RenderEditorWindow::IsOpen() const
 {
     if (m_Window == nullptr)
         return false;
@@ -253,37 +325,37 @@ bool RenderWindow::IsOpen() const
     return true;
 }
 
-int RenderWindow::GetWidth() const
+int RenderEditorWindow::GetWidth() const
 {
     return m_Width;
 }
 
-int RenderWindow::GetHeight() const
+int RenderEditorWindow::GetHeight() const
 {
     return m_Height;
 }
 
-bool RenderWindow::IsVSync() const
+bool RenderEditorWindow::IsVSync() const
 {
     return m_VSync;
 }
 
-bool RenderWindow::IsFullscreen() const
+bool RenderEditorWindow::IsFullscreen() const
 {
     return m_FullsScreen;
 }
 
-bool RenderWindow::IsVisible() const
+bool RenderEditorWindow::IsVisible() const
 {
     return m_Visible;
 }
 
-bool RenderWindow::IsMouseCursorVisible() const
+bool RenderEditorWindow::IsMouseCursorVisible() const
 {
     return m_MouseCursorVisible;
 }
 
-Eigen::Vector2f RenderWindow::GetPosition() const
+Eigen::Vector2f RenderEditorWindow::GetPosition() const
 {
     if (m_Window == nullptr)
         return Eigen::Vector2f();
@@ -292,7 +364,7 @@ Eigen::Vector2f RenderWindow::GetPosition() const
     return Eigen::Vector2f(x, y);
 }
 
-void RenderWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
+void RenderEditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
 {
     m_RenderSystem = renderSystem;
 }

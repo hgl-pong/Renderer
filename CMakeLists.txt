@@ -12,13 +12,16 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 file(GLOB SOURCE_FILES
     main.cpp
     include/*.h
+    include/Common/*.h
     include/RenderSystem/*.h
+    include/Engine/*.h
     src/*.h
     src/*.cpp
     src/RenderSystem/*.h
     src/RenderSystem/*.cpp
     src/RenderSystem/imgui/*.h
     src/RenderSystem/imgui/*.cpp
+    src/Engine/*.cpp
 )
 add_executable(${MY_TARGET} ${SOURCE_FILES})
 

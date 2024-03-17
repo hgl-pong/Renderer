@@ -1,7 +1,7 @@
 #pragma once
 #include "Component.h"
 #include <vector>
-#include <Types.h>
+#include <Common/Types.h>
 // #include "physx/PxPhysicsAPI.h"
 struct Mesh
 {

@@ -1,9 +1,9 @@
-#include <AssetLoader.h>
+#include <Engine/AssetLoader.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
-#include "Functions.h"
+#include "Common/Functions.h"
 void ModelLoader::ReadFile(const std::string &filename, Model &model)
 {
     auto it = m_models.find(filename);

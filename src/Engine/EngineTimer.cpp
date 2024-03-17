@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "EngineTimer.h"
+#include "Common/pch.h"
+#include "Engine/EngineTimer.h"
 EngineTimer::EngineTimer()
 {
     m_DeltaTime = -1.0;

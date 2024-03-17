@@ -1,37 +1,39 @@
 #pragma once
-#include "pch.h"
+#include "Common/pch.h"
 #include "RenderSystem/RenderSystemInterface.h"
 
+#define EDITOR_MODE
+
 class ImguiWindowsFactory;
-class RenderWindow
+class RenderEditorWindow : virtual public IRenderWindow
 {
 public:
-    RenderWindow();
-    ~RenderWindow();
+    RenderEditorWindow();
+    ~RenderEditorWindow();
 
 public:
-    void CreateRenderWindow(const std::string &title, int width, int height);
-    void DestroyRenderWindow();
-    void SetTitle(const std::string &title);
-    void SetSize(int width, int height);
-    void SetVSync(bool vsync);
-    void SetFullscreen(bool fullscreen);
-    void SetVisible(bool visible);
-    void SetMouseCursorVisible(bool visible);
-    void SetPosition(int x, int y);
-    void SetIcon(const std::string &iconPath);
-    void SetClearColor(const Eigen::Vector4f &color);
-    void Clear();
-    void Display();
-    bool IsOpen() const;
-    int GetWidth() const;
-    int GetHeight() const;
-    bool IsVSync() const;
-    bool IsFullscreen() const;
-    bool IsVisible() const;
-    bool IsMouseCursorVisible() const;
-    Eigen::Vector2f GetPosition() const;
-    void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem);
+    void CreateRenderWindow(const std::string &title, int width, int height)override;
+    void DestroyRenderWindow()override;
+    void SetTitle(const std::string &title)override;
+    void SetSize(int width, int height)override;
+    void SetVSync(bool vsync)override;
+    void SetFullscreen(bool fullscreen)override;
+    void SetVisible(bool visible)override;
+    void SetMouseCursorVisible(bool visible)override;
+    void SetPosition(int x, int y)override;
+    void SetIcon(const std::string &iconPath)override;
+    void SetClearColor(const Eigen::Vector4f &color)override;
+    void Clear()override;
+    void Display()override;
+    bool IsOpen() const override;
+    int GetWidth() const override;
+    int GetHeight() const override;
+    bool IsVSync() const override;
+    bool IsFullscreen() const override;
+    bool IsVisible() const override;
+    bool IsMouseCursorVisible() const override;
+    Eigen::Vector2f GetPosition() const override;
+    void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)override;
 
 public:
 private:

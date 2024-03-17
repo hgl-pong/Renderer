@@ -1,14 +1,17 @@
-﻿#include "RenderSystem/RenderWindow.h"
+﻿#include "RenderSystem/RenderSystemInterface.h"
 
 int main(int argc, char *argv[])
 {
-	RenderWindow testWindow;
-	testWindow.CreateRenderWindow("Renderer", 800, 600);
-	while (testWindow.IsOpen())
+	IRenderWindow* window = CreateRenderWindow();
+	if (window == nullptr)
+		return 0;
+	window->CreateRenderWindow("Renderer", 800, 600);
+	while (window->IsOpen())
 	{
-		testWindow.Display();
-		testWindow.Clear();
+		window->Display();
+		window->Clear();
 	}
-	testWindow.DestroyRenderWindow();
-	return 0;
+	window->DestroyRenderWindow();
+	delete window;
+	return 1;
 }
