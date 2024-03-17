@@ -1,10 +1,10 @@
 #include "Common/pch.h"
-#include "RenderWindow.h"
+#include "Engine/Window.h"
 
-IRenderWindow *CreateRenderWindow()
+IWindow *CreateRenderWindow()
 {
 #ifdef EDITOR_MODE
-    return new RenderEditorWindow();
+    return new EditorWindow();
 #else
     return nullptr;
 #endif
@@ -144,7 +144,7 @@ private:
     std::vector<std::shared_ptr<ImguiWindow>> m_Windows;
 };
 
-RenderEditorWindow::RenderEditorWindow()
+EditorWindow::EditorWindow()
     : m_RenderSystem(nullptr),
       m_Window(nullptr),
       m_Title(""),
@@ -159,12 +159,12 @@ RenderEditorWindow::RenderEditorWindow()
 {
 }
 
-RenderEditorWindow::~RenderEditorWindow()
+EditorWindow::~EditorWindow()
 {
     DestroyRenderWindow();
 }
 
-void RenderEditorWindow::CreateRenderWindow(const std::string &title, int width, int height)
+void EditorWindow::CreateRenderWindow(const std::string &title, int width, int height)
 {
     m_Title = title;
     m_Width = width;
@@ -192,7 +192,7 @@ void RenderEditorWindow::CreateRenderWindow(const std::string &title, int width,
     }
 }
 
-void RenderEditorWindow::DestroyRenderWindow()
+void EditorWindow::DestroyRenderWindow()
 {
     if (m_Window != nullptr)
     {
@@ -212,7 +212,7 @@ void RenderEditorWindow::DestroyRenderWindow()
     SDL_Quit();
 }
 
-void RenderEditorWindow::SetTitle(const std::string &title)
+void EditorWindow::SetTitle(const std::string &title)
 {
     if (m_Window == nullptr)
         return;
@@ -220,7 +220,7 @@ void RenderEditorWindow::SetTitle(const std::string &title)
     SDL_SetWindowTitle(m_Window.get(), m_Title.c_str());
 }
 
-void RenderEditorWindow::SetSize(int width, int height)
+void EditorWindow::SetSize(int width, int height)
 {
     if (m_Window == nullptr)
         return;
@@ -229,7 +229,7 @@ void RenderEditorWindow::SetSize(int width, int height)
     SDL_SetWindowSize(m_Window.get(), m_Width, m_Height);
 }
 
-void RenderEditorWindow::SetVSync(bool vsync)
+void EditorWindow::SetVSync(bool vsync)
 {
     if (m_Window == nullptr)
         return;
@@ -237,7 +237,7 @@ void RenderEditorWindow::SetVSync(bool vsync)
     SDL_GL_SetSwapInterval(m_VSync ? 1 : 0);
 }
 
-void RenderEditorWindow::SetFullscreen(bool fullscreen)
+void EditorWindow::SetFullscreen(bool fullscreen)
 {
     if (m_Window == nullptr)
         return;
@@ -245,7 +245,7 @@ void RenderEditorWindow::SetFullscreen(bool fullscreen)
     SDL_SetWindowFullscreen(m_Window.get(), m_FullsScreen ? SDL_WINDOW_FULLSCREEN : 0);
 }
 
-void RenderEditorWindow::SetVisible(bool visible)
+void EditorWindow::SetVisible(bool visible)
 {
     if (m_Window == nullptr)
         return;
@@ -253,7 +253,7 @@ void RenderEditorWindow::SetVisible(bool visible)
     SDL_ShowWindow(m_Window.get());
 }
 
-void RenderEditorWindow::SetMouseCursorVisible(bool visible)
+void EditorWindow::SetMouseCursorVisible(bool visible)
 {
     if (m_Window == nullptr)
         return;
@@ -261,25 +261,25 @@ void RenderEditorWindow::SetMouseCursorVisible(bool visible)
     SDL_ShowCursor(m_MouseCursorVisible ? 1 : 0);
 }
 
-void RenderEditorWindow::SetPosition(int x, int y)
+void EditorWindow::SetPosition(int x, int y)
 {
     if (m_Window == nullptr)
         return;
     m_Position = Eigen::Vector2f(x, y);
 }
 
-void RenderEditorWindow::SetIcon(const std::string &iconPath)
+void EditorWindow::SetIcon(const std::string &iconPath)
 {
     if (m_Window == nullptr)
         return;
 }
 
-void RenderEditorWindow::SetClearColor(const Eigen::Vector4f &color)
+void EditorWindow::SetClearColor(const Eigen::Vector4f &color)
 {
     m_ClearColor = color;
 }
 
-void RenderEditorWindow::Clear()
+void EditorWindow::Clear()
 {
     if (m_RenderSystem)
         m_RenderSystem->Clear(m_ClearColor);
@@ -293,7 +293,7 @@ void RenderEditorWindow::Clear()
     SDL_RenderClear(m_Renderer.get());
 }
 
-void RenderEditorWindow::Display()
+void EditorWindow::Display()
 {
     if (m_Window == nullptr)
         return;
@@ -307,7 +307,7 @@ void RenderEditorWindow::Display()
     SDL_UpdateWindowSurface(m_Window.get());
 }
 
-bool RenderEditorWindow::IsOpen() const
+bool EditorWindow::IsOpen() const
 {
     if (m_Window == nullptr)
         return false;
@@ -325,37 +325,37 @@ bool RenderEditorWindow::IsOpen() const
     return true;
 }
 
-int RenderEditorWindow::GetWidth() const
+int EditorWindow::GetWidth() const
 {
     return m_Width;
 }
 
-int RenderEditorWindow::GetHeight() const
+int EditorWindow::GetHeight() const
 {
     return m_Height;
 }
 
-bool RenderEditorWindow::IsVSync() const
+bool EditorWindow::IsVSync() const
 {
     return m_VSync;
 }
 
-bool RenderEditorWindow::IsFullscreen() const
+bool EditorWindow::IsFullscreen() const
 {
     return m_FullsScreen;
 }
 
-bool RenderEditorWindow::IsVisible() const
+bool EditorWindow::IsVisible() const
 {
     return m_Visible;
 }
 
-bool RenderEditorWindow::IsMouseCursorVisible() const
+bool EditorWindow::IsMouseCursorVisible() const
 {
     return m_MouseCursorVisible;
 }
 
-Eigen::Vector2f RenderEditorWindow::GetPosition() const
+Eigen::Vector2f EditorWindow::GetPosition() const
 {
     if (m_Window == nullptr)
         return Eigen::Vector2f();
@@ -364,7 +364,7 @@ Eigen::Vector2f RenderEditorWindow::GetPosition() const
     return Eigen::Vector2f(x, y);
 }
 
-void RenderEditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
+void EditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
 {
     m_RenderSystem = renderSystem;
 }

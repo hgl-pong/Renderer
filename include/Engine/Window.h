@@ -5,11 +5,11 @@
 #define EDITOR_MODE
 
 class ImguiWindowsFactory;
-class RenderEditorWindow : virtual public IRenderWindow
+class EditorWindow : virtual public IWindow
 {
 public:
-    RenderEditorWindow();
-    ~RenderEditorWindow();
+    EditorWindow();
+    ~EditorWindow();
 
 public:
     void CreateRenderWindow(const std::string &title, int width, int height)override;

@@ -1,8 +1,8 @@
-﻿#include "RenderSystem/RenderSystemInterface.h"
+﻿#include "Engine/EngineInterface.h"
 
 int main(int argc, char *argv[])
 {
-	IRenderWindow* window = CreateRenderWindow();
+	IWindow* window = CreateRenderWindow();
 	if (window == nullptr)
 		return 0;
 	window->CreateRenderWindow("Renderer", 800, 600);
