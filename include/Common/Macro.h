@@ -45,3 +45,5 @@
         deleter(device, object, nullptr);   \
         object = VK_NULL_HANDLE;            \
     }
+
+#define MODULE_TEST 1

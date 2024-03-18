@@ -31,11 +31,11 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 # Add the required packages
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(soil2 CONFIG REQUIRED)
 
 target_include_directories(${MY_TARGET}
     PUBLIC
@@ -44,7 +44,7 @@ target_include_directories(${MY_TARGET}
     ThirdParty/imgui
     PRIVATE
     ${OPENGL_INCLUDE_DIR}
-    )
+)
 
 # Link the required libraries
 target_link_libraries(${MY_TARGET}
@@ -52,9 +52,10 @@ target_link_libraries(${MY_TARGET}
     ${OPENGL_LIBRARIES}
     Vulkan::Vulkan
     GLEW::GLEW
-    glfw
     imgui
     assimp::assimp
     Eigen3::Eigen
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>)
+    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+    soil2
+)

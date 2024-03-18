@@ -1,9 +1,7 @@
 #pragma once
-#include "Common/Types.h"
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-class PhysicsModule;
+#include "Common/pch.h"
 class RenderModule;
+class PhysicsModule;
 class Application
 {
 public:

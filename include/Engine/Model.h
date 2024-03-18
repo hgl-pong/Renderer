@@ -1,14 +1,7 @@
 #pragma once
+#include "Common/pch.h"
 #include "Component.h"
-#include <vector>
-#include <Common/Types.h>
-// #include "physx/PxPhysicsAPI.h"
-struct Mesh
-{
-    // std::vector<physx::PxVec3> m_vertices;
-    std::vector<uint32_t> m_indices;
-    Color m_color;
-};
+
 class Model : public Component
 {
 public:
