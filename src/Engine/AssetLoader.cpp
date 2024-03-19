@@ -18,11 +18,11 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
         return;
     }
     HLOG_INFO("Loading model %s\n", filename.c_str());
-    model.m_meshes.resize(scene->mNumMeshes);
+    model.m_Meshes.resize(scene->mNumMeshes);
     for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
     {
         aiMesh *mesh = scene->mMeshes[i];
-        auto &newMesh = model.m_meshes[i];
+        auto &newMesh = model.m_Meshes[i];
         HLOG_INFO("Loading mesh %s\n", mesh->mName.C_Str());
         HLOG_INFO("Number of vertices: %d\n", mesh->mNumVertices);
         HLOG_INFO("Number of faces: %d\n", mesh->mNumFaces);
@@ -34,7 +34,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
         {
             aiVector3D vertex = mesh->mVertices[j];
-            newMesh.mVertices.push_back(Eigen::Vector3f(vertex.x, vertex.y, vertex.z));
+            newMesh.mVertices.push_back(Vector3f(vertex.x, vertex.y, vertex.z));
         }
         if (mesh->HasNormals())
         {
@@ -42,7 +42,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
             for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
             {
                 aiVector3D normal = mesh->mNormals[j];
-                newMesh.mNormals.push_back(Eigen::Vector3f(normal.x, normal.y, normal.z));
+                newMesh.mNormals.push_back(Vector3f(normal.x, normal.y, normal.z));
             }
         }
         if (mesh->HasTangentsAndBitangents())
@@ -51,18 +51,18 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
             for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
             {
                 aiVector3D tangent = mesh->mTangents[j];
-                newMesh.mTangents.push_back(Eigen::Vector4f(tangent.x, tangent.y, tangent.z, 0.0f));
+                newMesh.mTangents.push_back(Vector4f(tangent.x, tangent.y, tangent.z, 0.0f));
             }
         }
         for (uint32_t j = 0; j < mesh->GetNumUVChannels(); ++j)
         {
             if (mesh->HasTextureCoords(j))
             {
-                newMesh.mTexCoordsArray.push_back(std::vector<Eigen::Vector2f>(mesh->mNumVertices));
+                newMesh.mTexCoordsArray.push_back(std::vector<Vector2f>(mesh->mNumVertices));
                 for (uint32_t k = 0; k < mesh->mNumVertices; ++k)
                 {
                     aiVector3D texCoord = mesh->mTextureCoords[j][k];
-                    newMesh.mTexCoordsArray[j].push_back(Eigen::Vector2f(texCoord.x, texCoord.y));
+                    newMesh.mTexCoordsArray[j].push_back(Vector2f(texCoord.x, texCoord.y));
                 }
             }
             else

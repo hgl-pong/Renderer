@@ -154,8 +154,8 @@ EditorWindow::EditorWindow()
       m_FullsScreen(false),
       m_Visible(true),
       m_MouseCursorVisible(true),
-      m_ClearColor(Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f)),
-      m_Position(Eigen::Vector2f(0.0f, 0.0f))
+      m_ClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f)),
+      m_Position(Vector2f(0.0f, 0.0f))
 {
 }
 
@@ -265,7 +265,7 @@ void EditorWindow::SetPosition(int x, int y)
 {
     if (m_Window == nullptr)
         return;
-    m_Position = Eigen::Vector2f(x, y);
+    m_Position = Vector2f(x, y);
 }
 
 void EditorWindow::SetIcon(const std::string &iconPath)
@@ -274,7 +274,7 @@ void EditorWindow::SetIcon(const std::string &iconPath)
         return;
 }
 
-void EditorWindow::SetClearColor(const Eigen::Vector4f &color)
+void EditorWindow::SetClearColor(const Vector4f &color)
 {
     m_ClearColor = color;
 }
@@ -355,13 +355,13 @@ bool EditorWindow::IsMouseCursorVisible() const
     return m_MouseCursorVisible;
 }
 
-Eigen::Vector2f EditorWindow::GetPosition() const
+Vector2f EditorWindow::GetPosition() const
 {
     if (m_Window == nullptr)
-        return Eigen::Vector2f();
+        return Vector2f();
     int x, y;
     SDL_GetWindowPosition(m_Window.get(), &x, &y);
-    return Eigen::Vector2f(x, y);
+    return Vector2f(x, y);
 }
 
 void EditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)

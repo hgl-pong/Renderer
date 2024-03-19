@@ -14,5 +14,6 @@ public:
 
 private:
     friend class ModelLoader;
-    std::vector<Mesh> m_meshes;
+    BoundingBox m_BoundingBox;
+    std::vector<Mesh> m_Meshes;
 };

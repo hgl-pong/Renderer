@@ -18,10 +18,10 @@ git submodule update --init
 
 ## 安装依赖
 
-Renderer 依赖于以下库：OpenGL, GLEW, GLFW3, SDL2, Eigen3, Assimp 和 Vulkan。你可以通过以下 vcpkg 命令来安装这些依赖：
+Renderer 依赖于以下库：OpenGL, GLEW, SDL2,RapidJSON,soil2, Eigen3, Assimp 和 Vulkan。你可以通过以下 vcpkg 命令来安装这些依赖：
 
 ```bash
-vcpkg install glew glfw3 sdl2 assimp vulkan
+vcpkg install glew sdl2 rapidjson soil2 assimp vulkan
 ```
 
 ## 构建项目

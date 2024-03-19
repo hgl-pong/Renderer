@@ -64,7 +64,7 @@ public:
     void Shutdown() override;
     void BeginFrame() override;
     void EndFrame() override;
-    void Clear(const Eigen::Vector4f &color) override;
+    void Clear(const Vector4f &color) override;
     RenderSystemType GetRenderSystemType() const override { return RenderSystemType::Vulkan; }
 
 public:

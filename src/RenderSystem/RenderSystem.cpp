@@ -74,7 +74,7 @@ inline void VKRenderSystem::EndFrame()
 {
 }
 
-inline void VKRenderSystem::Clear(const Eigen::Vector4f &color)
+inline void VKRenderSystem::Clear(const Vector4f &color)
 {
 }
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Private//////////////////////////////////////////////////////////////////////////
@@ -373,7 +373,7 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
 
 //////////////////////////////////////////////////////////////////////////RenderSystem Factory//////////////////////////////////////////////////////////////////////////
 
-IRenderSystem *CreateRenderSystem(const RenderSystemType& type)
+IRenderSystem *CreateRenderSystem(const RenderSystemType &type)
 {
     switch (type)
     {

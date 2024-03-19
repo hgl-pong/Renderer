@@ -22,7 +22,7 @@ public:
     void SetMouseCursorVisible(bool visible) override;
     void SetPosition(int x, int y) override;
     void SetIcon(const std::string &iconPath) override;
-    void SetClearColor(const Eigen::Vector4f &color) override;
+    void SetClearColor(const Vector4f &color) override;
     void Clear() override;
     void Display() override;
     bool IsOpen() const override;
@@ -32,7 +32,7 @@ public:
     bool IsFullscreen() const override;
     bool IsVisible() const override;
     bool IsMouseCursorVisible() const override;
-    Eigen::Vector2f GetPosition() const override;
+    Vector2f GetPosition() const override;
     void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem) override;
 
 public:
@@ -48,8 +48,8 @@ private:
     bool m_FullsScreen;
     bool m_Visible;
     bool m_MouseCursorVisible;
-    Eigen::Vector4f m_ClearColor;
-    Eigen::Vector2f m_Position;
+    Vector4f m_ClearColor;
+    Vector2f m_Position;
 };
 
 #if MODULE_TEST
@@ -63,7 +63,7 @@ inline bool TestEditorWindow()
     window.SetMouseCursorVisible(true);
     window.SetPosition(100, 100);
     window.SetIcon("icon.png");
-    window.SetClearColor(Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+    window.SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
     window.Clear();
     window.Display();
     bool isOpen = window.IsOpen();
@@ -80,13 +80,13 @@ inline bool TestEditorWindow()
     HLOG_INFO("Window Is Visible: %d\n", visible);
     bool mouseCursorVisible = window.IsMouseCursorVisible();
     HLOG_INFO("Window Mouse Cursor Visible: %d\n", mouseCursorVisible);
-    Eigen::Vector2f position = window.GetPosition();
+    Vector2f position = window.GetPosition();
     HLOG_INFO("Window Position: (%f, %f)\n", position.x(), position.y());
     while (window.IsOpen())
     {
         window.Clear();
         window.Display();
-        // Eigen::Vector2f position = window.GetPosition();
+        // Vector2f position = window.GetPosition();
         // printf("Position: (%f, %f)\n", position.x(), position.y());
     }
     window.DestroyRenderWindow();

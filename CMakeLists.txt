@@ -24,6 +24,7 @@ file(GLOB SOURCE_FILES
     src/Engine/*.cpp
 )
 add_executable(${MY_TARGET} ${SOURCE_FILES})
+target_precompile_headers(${MY_TARGET} PRIVATE include/Common/pch.h)
 
 file(GLOB IMGUI_SOURCES ThirdParty/imgui/*.cpp)
 add_library(imgui STATIC ${IMGUI_SOURCES})
@@ -36,6 +37,7 @@ find_package(Vulkan REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(soil2 CONFIG REQUIRED)
+find_package(RapidJSON CONFIG REQUIRED)
 
 target_include_directories(${MY_TARGET}
     PUBLIC
@@ -58,4 +60,5 @@ target_link_libraries(${MY_TARGET}
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     soil2
+    rapidjson
 )
