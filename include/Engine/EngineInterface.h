@@ -31,8 +31,8 @@ public:
 class HAPI IAsset
 {
 public:
-    bool Serialize(std::vector<char> &buffer) const;
-    bool Deserialize(const std::vector<char> &buffer);
+    virtual bool Serialize(std::vector<char> &buffer) const=0;
+    virtual bool Deserialize(const std::vector<char> &buffer)=0;
 };
 
 class HAPI IPlugin
