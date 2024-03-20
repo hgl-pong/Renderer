@@ -17,6 +17,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <future>
 
 // Third-party
 #include <vulkan/vulkan.h>

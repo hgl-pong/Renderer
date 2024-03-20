@@ -33,7 +33,7 @@ public:
 
     void GetDesc(RenderTextureDesc *desc) const override
     {
-        if (dedsc == nullptr)
+        if (desc == nullptr)
         {
             HLOG_WARNING("Trying to get Texture Desc Failed, desc is nullptr");
             return;

@@ -95,6 +95,7 @@
         "cinttypes": "cpp",
         "future": "cpp",
         "random": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "*.ipp": "cpp"
     }
 }

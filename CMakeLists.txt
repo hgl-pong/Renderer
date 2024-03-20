@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.6)
 project(Renderer)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(MY_TARGET Renderer)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable)
