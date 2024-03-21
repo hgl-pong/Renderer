@@ -1,11 +1,13 @@
 ﻿#include "Engine/Window.h"
 #include "Engine/AssetLoader.h"
 #include "Engine/JsonParser.h"
+#include "Engine/JobSystem.h"
 int main(int argc, char *argv[])
 {
 	// TestEditorWindow();
-	TestModelLoader();
+	// TestModelLoader();
 	// TestImageLoader();
-	TestJsonParser();
+	// TestJsonParser();
+	TestJobSystem();
 	return 1;
 }

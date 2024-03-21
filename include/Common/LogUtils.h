@@ -19,15 +19,21 @@
     std::strftime(buffer, sizeof(buffer), LOG_TIME_FORMAT, std::localtime(&now_c)); \
     return buffer; })()
 
+
+static std::mutex logMutex;
+
 template <typename... Args>
-inline void LogMessage(const std::string &level, const std::string &color, const std::string &msg, Args &&...args)
+static void LogMessage(const std::string& level, const std::string& color, const std::string& msg, Args &&...args)
 {
+    std::lock_guard<std::mutex> lock(logMutex);
+
     std::cout << GET_CURRENT_TIME_STR() << color << " [" << level << "] "
-              << "\033[0m";
+        << "\033[0m";
     printf(msg.c_str(), std::forward<Args>(args)...);
 }
 
-#define HLOG_VERBOSE(msg, ...) LogMessage("VERBOSE", "\033[36m", msg, ##__VA_ARGS__)
-#define HLOG_INFO(msg, ...) LogMessage("INFO", "\033[32m", msg, ##__VA_ARGS__)
-#define HLOG_WARNING(msg, ...) LogMessage("WARNING", "\033[33m", msg, ##__VA_ARGS__)
-#define HLOG_ERROR(msg, ...) LogMessage("ERROR", "\033[31m", msg, ##__VA_ARGS__)
+
+#define HLOG_VERBOSE(msg, ...)     do{ LogMessage("VERBOSE", "\033[36m", msg, ##__VA_ARGS__); } while (false)
+#define HLOG_INFO(msg, ...) do{ LogMessage("INFO", "\033[32m", msg, ##__VA_ARGS__);} while (false)
+#define HLOG_WARNING(msg, ...) do{ LogMessage("WARNING", "\033[33m", msg, ##__VA_ARGS__);} while (false)
+#define HLOG_ERROR(msg, ...) do{ LogMessage("ERROR", "\033[31m", msg, ##__VA_ARGS__);} while (false)
