@@ -4,7 +4,7 @@
 class Worker
 {
 public:
-    Worker() : m_IsRunning(true), m_WorkerID(UINT_MAX)
+    Worker(uint32_t workerID = UINT_MAX) : m_IsRunning(true), m_WorkerID(workerID)
     {
         m_Thread = std::thread(&Worker::Run, this);
     }
@@ -12,12 +12,15 @@ public:
     ~Worker()
     {
         Stop();
-        m_Thread.join();
+        if (m_Thread.joinable())
+        {
+            m_Thread.join();
+        }
     }
 
     void Run()
     {
-        std::function<void()> job;
+        std::unique_ptr<Job> job;
         while (m_IsRunning)
         {
             {
@@ -31,13 +34,13 @@ public:
             }
             if (job)
             {
-                job();
+                job->Execute();
                 job = nullptr;
             }
         }
     }
 
-    void Execute(Job *job)
+    void Execute(std::unique_ptr<Job> &job)
     {
         std::lock_guard<std::mutex> guard(m_Mutex);
         if (m_CurrentJob)
@@ -45,7 +48,7 @@ public:
             HLOG_ERROR("Worker is busy, can't execute job");
             return;
         }
-        m_CurrentJob = std::bind(&Job::Execute, job);
+        m_CurrentJob = std::move(job);
         WakeUp();
     }
 
@@ -91,62 +94,60 @@ private:
     std::condition_variable m_Condition;
     std::atomic<bool> m_IsRunning;
     std::thread m_Thread;
-    std::function<void()> m_CurrentJob = nullptr;
+    std::unique_ptr<Job> m_CurrentJob;
 };
 
 JobSystem::JobSystem()
 {
-    for (int i = 0; i < std::thread::hardware_concurrency(); i++)
-        m_Workers.push_back(new Worker());
+    for (int i = 0; i < m_MaxNumOfWorkers / 2; i++)
+        m_Workers.push_back(std::make_unique<Worker>());
+    HLOG_INFO("JobSystem initialized, number of workers: %d\n", m_MaxNumOfWorkers);
 }
 
 JobSystem::~JobSystem()
 {
-    for (auto worker : m_Workers)
-    {
-        delete worker;
-    }
 }
 
 uint32_t JobSystem::RequestWorker()
 {
-    uint32_t i = 0;
-    for (auto worker : m_Workers)
+    uint32_t id = static_cast<uint32_t>(m_Workers.size());
+    if (id >= m_MaxNumOfWorkers)
     {
-        if (!worker->IsDedicated())
-        {
-            worker->SetWorkerID(i);
-            HLOG_INFO("Worker assigned");
-            return i;
-        }
-        i++;
+        HLOG_ERROR("No available worker");
+        return UINT_MAX;
     }
-    HLOG_ERROR("No available worker");
-    return UINT_MAX;
+    m_Workers.push_back(std::make_unique<Worker>(id));
+    HLOG_INFO("Worker requested");
+    return id;
 }
 
 bool JobSystem::ReleaseWorker(uint32_t workerId)
 {
-    auto &worker = m_Workers[workerId];
-    if (worker->IsDedicated() && worker->GetWorkerID() == workerId)
+    for (auto it = m_Workers.begin(); it != m_Workers.end(); it++)
     {
-        worker->SetWorkerID(UINT_MAX);
-        HLOG_INFO("Worker released");
-        return true;
+        if ((*it)->GetWorkerID() == workerId)
+        {
+            m_Workers.erase(it);
+            HLOG_INFO("Worker released");
+            return true;
+        }
     }
     HLOG_ERROR("Not Found worker");
     return false;
 }
 
-bool JobSystem::SubmitJob(Job *job)
+bool JobSystem::SubmitJob(std::unique_ptr<Job> &job)
 {
-    m_Jobs.push_back(job);
+    std::lock_guard<std::mutex> guard(m_JobMutex);
+    m_Jobs.push_back(std::move(job));
+    m_JobCV.notify_one();
     return true;
 }
 
 void JobSystem::AllocateJob()
 {
-    for (auto worker : m_Workers)
+    std::lock_guard<std::mutex> guard(m_JobMutex);
+    for (auto &worker : m_Workers)
     {
         if (!worker->IsBusy())
         {
@@ -170,7 +171,7 @@ bool JobSystem::Run()
 
 bool JobSystem::IsFinished() const
 {
-    for (auto worker : m_Workers)
+    for (auto &worker : m_Workers)
     {
         if (worker->IsBusy())
             return false;

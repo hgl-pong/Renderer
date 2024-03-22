@@ -35,7 +35,10 @@ public:
 
     void Execute()
     {
-        m_ExecuteFunction();
+        if (m_ExecuteFunction)
+        {
+            m_ExecuteFunction();
+        }
         m_IsFinished = true;
     }
 
@@ -60,10 +63,12 @@ public:
         return res;
     }
 
-    bool operator<(const Job &other) const
+    friend inline bool operator<(const Job &a, const Job &b)
     {
-        return m_Priority < other.m_Priority;
+        return a.m_Priority < b.m_Priority;
     }
+
+    friend inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b);
 
 private:
     uint32_t m_WorkerID = UINT_MAX;
@@ -71,6 +76,12 @@ private:
     uint8_t m_Priority = 0;
     std::function<void()> m_ExecuteFunction;
 };
+
+inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b)
+{
+    return a->m_Priority < b->m_Priority;
+};
+
 class Worker;
 class JobSystem
 {
@@ -89,21 +100,24 @@ public:
         case ScheduleStrategy::LIFO:
             break;
         case ScheduleStrategy::PRIORITY:
-            std::sort(m_Jobs.begin(), m_Jobs.end(), [](Job *a, Job *b)
-                      { return *a < *b; });
+            std::sort(m_Jobs.begin(), m_Jobs.end(), [](const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b)
+                      { return a < b; });
             break;
         }
     }
 
     void AllocateJob();
-    bool SubmitJob(Job *job);
+    bool SubmitJob(std::unique_ptr<Job> &job);
     bool Run();
     bool IsFinished() const;
 
 private:
+    uint32_t m_MaxNumOfWorkers = std::thread::hardware_concurrency();
     bool m_bIsRunning = false;
-    std::vector<Worker *> m_Workers;
-    std::deque<Job *> m_Jobs;
+    std::vector<std::unique_ptr<Worker>> m_Workers;
+    std::deque<std::unique_ptr<Job>> m_Jobs;
+    std::condition_variable m_JobCV;
+    std::mutex m_JobMutex;
 };
 #ifdef MODULE_TEST
 inline void TestJobSystem()
@@ -111,12 +125,12 @@ inline void TestJobSystem()
     JobSystem jobSystem;
     for (int i = 0; i < 10000; i++)
     {
-        std::string log = "Job " + std::to_string(i)+" executed\n";
-        Job *job = new Job([log]()
-                           { HLOG_INFO(log.c_str()); });
+        std::string log = "Job " + std::to_string(i) + " executed\n";
+        std::unique_ptr<Job> job = std::make_unique<Job>([log]()
+                                                         { HLOG_INFO(log.c_str()); });
         jobSystem.SubmitJob(job);
     }
-    jobSystem.SortJobs(ScheduleStrategy::PRIORITY);
+    // jobSystem.SortJobs(ScheduleStrategy::PRIORITY);
     jobSystem.AllocateJob();
     jobSystem.Run();
 }
