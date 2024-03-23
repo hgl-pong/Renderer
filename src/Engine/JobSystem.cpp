@@ -1,6 +1,8 @@
 #include "Common/pch.h"
 #include "Engine/JobSystem.h"
 
+static JobSystem *jobSystemSingleton = nullptr;
+
 class Worker
 {
 public:
@@ -36,20 +38,35 @@ public:
             {
                 job->Execute();
                 job = nullptr;
+
+                std::lock_guard<std::mutex> guard(m_Mutex);
+                if (jobSystemSingleton)
+                    if ((m_WorkerID == UINT_MAX && jobSystemSingleton->GetFirstJob(job)) ||
+                        (m_WorkerID != UINT_MAX && (jobSystemSingleton->GetFirstJob(job, m_WorkerID) || jobSystemSingleton->GetFirstJob(job))))
+                    {
+                        m_CurrentJob = std::move(job);
+                        WakeUp();
+                    }
+                    else
+                    {
+                        Stop();
+                    }
             }
         }
     }
 
-    void Execute(std::unique_ptr<Job> &job)
+    void Activate()
     {
         std::lock_guard<std::mutex> guard(m_Mutex);
-        if (m_CurrentJob)
-        {
-            HLOG_ERROR("Worker is busy, can't execute job");
-            return;
-        }
-        m_CurrentJob = std::move(job);
-        WakeUp();
+        std::unique_ptr<Job> job;
+        if (jobSystemSingleton)
+            if ((m_WorkerID == UINT_MAX && jobSystemSingleton->GetFirstJob(job)) ||
+                (m_WorkerID != UINT_MAX && (jobSystemSingleton->GetFirstJob(job, m_WorkerID) || jobSystemSingleton->GetFirstJob(job))))
+            {
+                m_CurrentJob = std::move(job);
+                WakeUp();
+            }
+        m_IsRunning = true;
     }
 
     bool IsBusy() const
@@ -106,6 +123,15 @@ JobSystem::JobSystem()
 
 JobSystem::~JobSystem()
 {
+    std::unique_lock<std::mutex> lock(m_JobMutex);
+    m_JobCV.wait(lock, [this]()->bool
+        { return m_Jobs.empty() && IsFinished(); });
+        for (auto &worker : m_Workers)
+    {
+        worker.reset();
+    }
+    m_Workers.clear();
+    HLOG_INFO("JobSystem destroyed\n");
 }
 
 uint32_t JobSystem::RequestWorker()
@@ -113,11 +139,11 @@ uint32_t JobSystem::RequestWorker()
     uint32_t id = static_cast<uint32_t>(m_Workers.size());
     if (id >= m_MaxNumOfWorkers)
     {
-        HLOG_ERROR("No available worker");
+        HLOG_ERROR("No available worker\n");
         return UINT_MAX;
     }
     m_Workers.push_back(std::make_unique<Worker>(id));
-    HLOG_INFO("Worker requested");
+    HLOG_INFO("Worker requested\n");
     return id;
 }
 
@@ -128,43 +154,32 @@ bool JobSystem::ReleaseWorker(uint32_t workerId)
         if ((*it)->GetWorkerID() == workerId)
         {
             m_Workers.erase(it);
-            HLOG_INFO("Worker released");
+            HLOG_INFO("Worker released\n");
             return true;
         }
     }
-    HLOG_ERROR("Not Found worker");
+    HLOG_ERROR("Not Found worker\n");
     return false;
 }
 
 bool JobSystem::SubmitJob(std::unique_ptr<Job> &job)
 {
     std::lock_guard<std::mutex> guard(m_JobMutex);
+    if (job == nullptr)
+    {
+        HLOG_ERROR("Submitting a null job\n");
+        return false;
+    }
     m_Jobs.push_back(std::move(job));
     m_JobCV.notify_one();
     return true;
 }
 
-void JobSystem::AllocateJob()
-{
-    std::lock_guard<std::mutex> guard(m_JobMutex);
-    for (auto &worker : m_Workers)
-    {
-        if (!worker->IsBusy())
-        {
-            if (!m_Jobs.empty())
-            {
-                worker->Execute(m_Jobs.front());
-                m_Jobs.pop_front();
-            }
-        }
-    }
-}
-
 bool JobSystem::Run()
 {
-    while (!IsFinished())
+    for (auto &worker : m_Workers)
     {
-        AllocateJob();
+        worker->Activate();
     }
     return true;
 }
@@ -177,4 +192,80 @@ bool JobSystem::IsFinished() const
             return false;
     }
     return true;
+}
+
+bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job)
+{
+    std::lock_guard<std::mutex> guard(m_JobMutex);
+    if (m_Jobs.empty())
+    {
+        return false;
+    }
+    job = std::move(m_Jobs.front());
+    m_Jobs.pop_front();
+    return true;
+}
+
+bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID)
+{
+    std::lock_guard<std::mutex> guard(m_JobMutex);
+    if (m_Jobs.empty())
+    {
+        return false;
+    }
+    std::deque<std::unique_ptr<Job>> tempQueue;
+    bool result = false;
+    while (!m_Jobs.empty())
+    {
+        if (m_Jobs.front()->GetWorkerID() == workerID)
+        {
+            job = std::move(m_Jobs.front());
+            m_Jobs.pop_front();
+            result = true;
+            break;
+        }
+        tempQueue.push_back(std::move(m_Jobs.front()));
+        m_Jobs.pop_front();
+    }
+
+    while (!m_Jobs.empty())
+    {
+        tempQueue.push_back(std::move(m_Jobs.front()));
+        m_Jobs.pop_front();
+    }
+    m_Jobs = std::move(tempQueue);
+    return result;
+}
+
+JobSystem *JobSystem::CreateJobSystem()
+{
+    if (jobSystemSingleton == nullptr)
+    {
+        jobSystemSingleton = new JobSystem();
+    }
+    else
+    {
+        HLOG_ERROR("JobSystem is already initialized,JobSystem class is a singleton\n");
+    }
+    return jobSystemSingleton;
+}
+
+void JobSystem::DestroyJobSystem(JobSystem *jobSystem)
+{
+    if (jobSystemSingleton != nullptr)
+    {
+        delete jobSystemSingleton;
+        jobSystemSingleton = nullptr;
+    }
+}
+
+bool GetJobSystem(JobSystem **jobSystem)
+{
+    if (jobSystemSingleton != nullptr)
+    {
+        *jobSystem = jobSystemSingleton;
+        return true;
+    }
+    HLOG_ERROR("JobSystem is not initialized\n");
+    return false;
 }

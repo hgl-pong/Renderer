@@ -55,6 +55,10 @@ Engine *Engine::CreateEngine()
     {
         engineSingleton = new Engine();
     }
+    else
+    {
+        HLOG_ERROR("Engine is already initialized,Engine class is a singleton\n");
+    }
     return engineSingleton;
 }
 
@@ -74,6 +78,6 @@ bool GetEngine(Engine **engine)
         *engine = engineSingleton;
         return true;
     }
-    HLOG_ERROR("Engine is not initialized");
+    HLOG_ERROR("Engine is not initialized\n");
     return false;
 }

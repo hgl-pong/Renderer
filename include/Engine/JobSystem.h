@@ -63,6 +63,11 @@ public:
         return res;
     }
 
+    uint32_t GetWorkerID() const
+    {
+        return m_WorkerID;
+    }
+
     friend inline bool operator<(const Job &a, const Job &b)
     {
         return a.m_Priority < b.m_Priority;
@@ -85,8 +90,10 @@ inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> 
 class Worker;
 class JobSystem
 {
-public:
+private:
     JobSystem();
+
+public:
     ~JobSystem();
     uint32_t RequestWorker();
     bool ReleaseWorker(uint32_t workerId);
@@ -105,11 +112,16 @@ public:
             break;
         }
     }
+    bool GetFirstJob(std::unique_ptr<Job> &job);
+    bool GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID);
 
-    void AllocateJob();
     bool SubmitJob(std::unique_ptr<Job> &job);
     bool Run();
     bool IsFinished() const;
+
+public:
+    static JobSystem *CreateJobSystem();
+    static void DestroyJobSystem(JobSystem *jobSystem);
 
 private:
     uint32_t m_MaxNumOfWorkers = std::thread::hardware_concurrency();
@@ -119,19 +131,21 @@ private:
     std::condition_variable m_JobCV;
     std::mutex m_JobMutex;
 };
+
+inline bool GetJobSystem(JobSystem **jobSystem);
+
 #ifdef MODULE_TEST
 inline void TestJobSystem()
 {
-    JobSystem jobSystem;
+    std::unique_ptr<JobSystem> jobSystem(JobSystem::CreateJobSystem());
     for (int i = 0; i < 10000; i++)
     {
         std::string log = "Job " + std::to_string(i) + " executed\n";
         std::unique_ptr<Job> job = std::make_unique<Job>([log]()
                                                          { HLOG_INFO(log.c_str()); });
-        jobSystem.SubmitJob(job);
+        jobSystem->SubmitJob(job);
     }
-    // jobSystem.SortJobs(ScheduleStrategy::PRIORITY);
-    jobSystem.AllocateJob();
-    jobSystem.Run();
+    jobSystem->SortJobs(ScheduleStrategy::PRIORITY);
+    jobSystem->Run();
 }
 #endif
