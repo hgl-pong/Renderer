@@ -2,7 +2,7 @@
 #include "Engine/JobSystem.h"
 
 static JobSystem *jobSystemSingleton = nullptr;
-
+std::atomic<int> counter(0);
 class Worker
 {
 public:
@@ -13,7 +13,6 @@ public:
 
     ~Worker()
     {
-        Stop();
         if (m_Thread.joinable())
         {
             m_Thread.join();
@@ -22,7 +21,7 @@ public:
 
     void Run()
     {
-        std::unique_ptr<Job> job;
+        bool needToCallBackJobsFinished = false;
         while (m_IsRunning)
         {
             {
@@ -31,42 +30,56 @@ public:
                                  { return !m_IsRunning || m_CurrentJob != nullptr; });
                 if (!m_IsRunning)
                     break;
-                job = std::move(m_CurrentJob);
+                m_CurrentJob->Execute();
+                counter++;
+                HLOG_INFO("Job executed sequence %d\n", counter.load());
                 m_CurrentJob = nullptr;
             }
-            if (job)
+            if (jobSystemSingleton)
             {
-                job->Execute();
-                job = nullptr;
-
-                std::lock_guard<std::mutex> guard(m_Mutex);
-                if (jobSystemSingleton)
-                    if ((m_WorkerID == UINT_MAX && jobSystemSingleton->GetFirstJob(job)) ||
-                        (m_WorkerID != UINT_MAX && (jobSystemSingleton->GetFirstJob(job, m_WorkerID) || jobSystemSingleton->GetFirstJob(job))))
-                    {
-                        m_CurrentJob = std::move(job);
-                        WakeUp();
-                    }
-                    else
-                    {
-                        Stop();
-                    }
+                if (m_WorkerID != UINT_MAX)
+                {
+                    jobSystemSingleton->GetFirstJob(m_CurrentJob, m_WorkerID);
+                }
+                if (m_CurrentJob == nullptr)
+                {
+                    jobSystemSingleton->GetFirstJob(m_CurrentJob);
+                }
             }
+            if (m_CurrentJob == nullptr)
+            {
+                Stop();
+                needToCallBackJobsFinished = true;
+            }
+        }
+        if (needToCallBackJobsFinished)
+        {
+            jobSystemSingleton->CallBackJobsFinished();
         }
     }
 
     void Activate()
     {
-        std::lock_guard<std::mutex> guard(m_Mutex);
-        std::unique_ptr<Job> job;
-        if (jobSystemSingleton)
-            if ((m_WorkerID == UINT_MAX && jobSystemSingleton->GetFirstJob(job)) ||
-                (m_WorkerID != UINT_MAX && (jobSystemSingleton->GetFirstJob(job, m_WorkerID) || jobSystemSingleton->GetFirstJob(job))))
+        std::unique_lock<std::mutex> lock(m_Mutex);
+        {
+
+            if (jobSystemSingleton)
             {
-                m_CurrentJob = std::move(job);
-                WakeUp();
+                if (m_WorkerID != UINT_MAX)
+                {
+                    jobSystemSingleton->GetFirstJob(m_CurrentJob, m_WorkerID);
+                }
+                if (m_CurrentJob == nullptr)
+                {
+                    jobSystemSingleton->GetFirstJob(m_CurrentJob);
+                }
             }
-        m_IsRunning = true;
+        }
+        lock.unlock();
+        if (m_CurrentJob != nullptr)
+            WakeUp();
+        else
+            Stop();
     }
 
     bool IsBusy() const
@@ -97,12 +110,16 @@ private:
             std::lock_guard<std::mutex> guard(m_Mutex);
             m_IsRunning = false;
         }
-        WakeUp();
+        m_Condition.notify_all();
     }
 
     bool WakeUp()
     {
-        m_Condition.notify_one();
+        {
+            std::lock_guard<std::mutex> guard(m_Mutex);
+            m_IsRunning = true;
+        }
+        m_Condition.notify_all();
         return true;
     }
 
@@ -118,19 +135,21 @@ JobSystem::JobSystem()
 {
     for (int i = 0; i < m_MaxNumOfWorkers / 2; i++)
         m_Workers.push_back(std::make_unique<Worker>());
-    HLOG_INFO("JobSystem initialized, number of workers: %d\n", m_MaxNumOfWorkers);
+    HLOG_INFO("Device Supported threads: %d\n", m_MaxNumOfWorkers);
+    HLOG_INFO("JobSystem initialized, number of workers: %d\n", m_Workers.size());
 }
 
 JobSystem::~JobSystem()
 {
     std::unique_lock<std::mutex> lock(m_JobMutex);
-    m_JobCV.wait(lock, [this]()->bool
-        { return m_Jobs.empty() && IsFinished(); });
-        for (auto &worker : m_Workers)
+    m_JobCV.wait(lock, [&]
+                 { return m_Jobs.empty() && IsFinished(); });
+    for (auto &worker : m_Workers)
     {
         worker.reset();
     }
     m_Workers.clear();
+    jobSystemSingleton = nullptr;
     HLOG_INFO("JobSystem destroyed\n");
 }
 
@@ -171,7 +190,7 @@ bool JobSystem::SubmitJob(std::unique_ptr<Job> &job)
         return false;
     }
     m_Jobs.push_back(std::move(job));
-    m_JobCV.notify_one();
+    m_JobCV.notify_all();
     return true;
 }
 
@@ -188,8 +207,10 @@ bool JobSystem::IsFinished() const
 {
     for (auto &worker : m_Workers)
     {
-        if (worker->IsBusy())
+        if (!worker->IsBusy())
+        {
             return false;
+        }
     }
     return true;
 }
@@ -235,6 +256,13 @@ bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID)
     }
     m_Jobs = std::move(tempQueue);
     return result;
+}
+
+bool JobSystem::CallBackJobsFinished()
+{
+    std::unique_lock<std::mutex> lock(m_JobMutex);
+    m_JobCV.notify_all();
+    return true;
 }
 
 JobSystem *JobSystem::CreateJobSystem()

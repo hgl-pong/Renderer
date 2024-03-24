@@ -119,6 +119,8 @@ public:
     bool Run();
     bool IsFinished() const;
 
+    bool CallBackJobsFinished();
+
 public:
     static JobSystem *CreateJobSystem();
     static void DestroyJobSystem(JobSystem *jobSystem);
@@ -147,5 +149,6 @@ inline void TestJobSystem()
     }
     jobSystem->SortJobs(ScheduleStrategy::PRIORITY);
     jobSystem->Run();
+
 }
 #endif

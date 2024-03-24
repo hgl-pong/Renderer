@@ -1,8 +1,8 @@
-﻿#include "Engine/Window.h"
-#include "Engine/AssetLoader.h"
-#include "Engine/JsonParser.h"
-#include "Engine/JobSystem.h"
-int main(int argc, char *argv[])
+﻿ #include "Engine/Window.h"
+ #include "Engine/AssetLoader.h"
+ #include "Engine/JsonParser.h"
+ #include "Engine/JobSystem.h"
+ int main(int argc, char *argv[])
 {
 	// TestEditorWindow();
 	// TestModelLoader();
@@ -10,4 +10,5 @@ int main(int argc, char *argv[])
 	// TestJsonParser();
 	TestJobSystem();
 	return 1;
-}
+ }
+
