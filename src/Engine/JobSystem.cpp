@@ -2,133 +2,16 @@
 #include "Engine/JobSystem.h"
 
 static JobSystem *jobSystemSingleton = nullptr;
+static std::condition_variable jobSystemCV;
 std::atomic<int> counter(0);
-class Worker
+
+class Factory
 {
 public:
-    Worker(uint32_t workerID = UINT_MAX) : m_IsRunning(true), m_WorkerID(workerID)
-    {
-        m_Thread = std::thread(&Worker::Run, this);
-    }
-
-    ~Worker()
-    {
-        if (m_Thread.joinable())
-        {
-            m_Thread.join();
-        }
-    }
-
-    void Run()
-    {
-        bool needToCallBackJobsFinished = false;
-        while (m_IsRunning)
-        {
-            {
-                std::unique_lock<std::mutex> lock(m_Mutex);
-                m_Condition.wait(lock, [this]
-                                 { return !m_IsRunning || m_CurrentJob != nullptr; });
-                if (!m_IsRunning)
-                    break;
-                m_CurrentJob->Execute();
-                counter++;
-                HLOG_INFO("Job executed sequence %d\n", counter.load());
-                m_CurrentJob = nullptr;
-            }
-            if (jobSystemSingleton)
-            {
-                if (m_WorkerID != UINT_MAX)
-                {
-                    jobSystemSingleton->GetFirstJob(m_CurrentJob, m_WorkerID);
-                }
-                if (m_CurrentJob == nullptr)
-                {
-                    jobSystemSingleton->GetFirstJob(m_CurrentJob);
-                }
-            }
-            if (m_CurrentJob == nullptr)
-            {
-                Stop();
-                needToCallBackJobsFinished = true;
-            }
-        }
-        if (needToCallBackJobsFinished)
-        {
-            jobSystemSingleton->CallBackJobsFinished();
-        }
-    }
-
-    void Activate()
-    {
-        std::unique_lock<std::mutex> lock(m_Mutex);
-        {
-
-            if (jobSystemSingleton)
-            {
-                if (m_WorkerID != UINT_MAX)
-                {
-                    jobSystemSingleton->GetFirstJob(m_CurrentJob, m_WorkerID);
-                }
-                if (m_CurrentJob == nullptr)
-                {
-                    jobSystemSingleton->GetFirstJob(m_CurrentJob);
-                }
-            }
-        }
-        lock.unlock();
-        if (m_CurrentJob != nullptr)
-            WakeUp();
-        else
-            Stop();
-    }
-
-    bool IsBusy() const
-    {
-        std::lock_guard<std::mutex> guard(m_Mutex);
-        return m_CurrentJob != nullptr;
-    }
-
-    bool IsDedicated() const
-    {
-        return m_WorkerID != UINT_MAX;
-    }
-
-    void SetWorkerID(uint32_t workerID)
-    {
-        m_WorkerID = workerID;
-    }
-
-    uint32_t GetWorkerID() const
-    {
-        return m_WorkerID;
-    }
+    Factory() = default;
+    ~Factory() = default;
 
 private:
-    void Stop()
-    {
-        {
-            std::lock_guard<std::mutex> guard(m_Mutex);
-            m_IsRunning = false;
-        }
-        m_Condition.notify_all();
-    }
-
-    bool WakeUp()
-    {
-        {
-            std::lock_guard<std::mutex> guard(m_Mutex);
-            m_IsRunning = true;
-        }
-        m_Condition.notify_all();
-        return true;
-    }
-
-    uint32_t m_WorkerID;
-    mutable std::mutex m_Mutex;
-    std::condition_variable m_Condition;
-    std::atomic<bool> m_IsRunning;
-    std::thread m_Thread;
-    std::unique_ptr<Job> m_CurrentJob;
 };
 
 JobSystem::JobSystem()
@@ -142,8 +25,8 @@ JobSystem::JobSystem()
 JobSystem::~JobSystem()
 {
     std::unique_lock<std::mutex> lock(m_JobMutex);
-    m_JobCV.wait(lock, [&]
-                 { return m_Jobs.empty() && IsFinished(); });
+    jobSystemCV.wait(lock, [&]
+                     { return m_Jobs.empty() && IsFinished(); });
     for (auto &worker : m_Workers)
     {
         worker.reset();
@@ -215,11 +98,30 @@ bool JobSystem::IsFinished() const
     return true;
 }
 
+void JobSystem::SortJobs(ScheduleStrategy strategy)
+{
+    std::lock_guard<std::mutex> guard(m_JobMutex);
+    switch (strategy)
+    {
+    case ScheduleStrategy::FIFO:
+        break;
+    case ScheduleStrategy::LIFO:
+        std::reverse(m_Jobs.begin(), m_Jobs.end());
+        break;
+    case ScheduleStrategy::PRIORITY:
+        std::sort(m_Jobs.begin(), m_Jobs.end());
+        break;
+    default:
+        break;
+    }
+}
+
 bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job)
 {
     std::lock_guard<std::mutex> guard(m_JobMutex);
     if (m_Jobs.empty())
     {
+        m_JobCV.notify_all();
         return false;
     }
     job = std::move(m_Jobs.front());
@@ -232,6 +134,7 @@ bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID)
     std::lock_guard<std::mutex> guard(m_JobMutex);
     if (m_Jobs.empty())
     {
+        m_JobCV.notify_all();
         return false;
     }
     std::deque<std::unique_ptr<Job>> tempQueue;
@@ -256,13 +159,6 @@ bool JobSystem::GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID)
     }
     m_Jobs = std::move(tempQueue);
     return result;
-}
-
-bool JobSystem::CallBackJobsFinished()
-{
-    std::unique_lock<std::mutex> lock(m_JobMutex);
-    m_JobCV.notify_all();
-    return true;
 }
 
 JobSystem *JobSystem::CreateJobSystem()
