@@ -3,7 +3,6 @@
 
 static JobSystem *jobSystemSingleton = nullptr;
 static std::condition_variable jobSystemCV;
-std::atomic<int> counter(0);
 
 class Factory
 {
@@ -16,104 +15,75 @@ private:
 
 JobSystem::JobSystem()
 {
-    // for (int i = 0; i < m_MaxNumOfWorkers / 2; i++)
-    //     m_Workers.push_back(std::make_unique<Worker>());
-    // HLOG_INFO("Device Supported threads: %d\n", m_MaxNumOfWorkers);
-    // HLOG_INFO("JobSystem initialized, number of workers: %d\n", m_Workers.size());
+    HLOG_INFO("JobSystem created\n");
+    m_JobPipeLines.push_back(std::make_unique<JobPipeLine>(m_MaxNumOfWorkers / 2));
+    m_CurrentNumOfWorkers = m_MaxNumOfWorkers / 2;
 }
 
 JobSystem::~JobSystem()
 {
-    // std::unique_lock<std::mutex> lock(m_JobMutex);
-    // jobSystemCV.wait(lock, [&]
-    //                  { return m_Jobs.empty() && IsFinished(); });
-    // for (auto &worker : m_Workers)
-    // {
-    //     worker.reset();
-    // }
-    // m_Workers.clear();
-    // jobSystemSingleton = nullptr;
-    // HLOG_INFO("JobSystem destroyed\n");
+    std::lock_guard<std::mutex> guard(m_Mutex);
+    for (auto &pipeline : m_JobPipeLines)
+    {
+        pipeline.reset();
+    }
+    m_JobPipeLines.clear();
 }
 
-uint32_t JobSystem::RequestWorker()
+uint32_t JobSystem::CreateNewPipeLine()
 {
-    // uint32_t id = static_cast<uint32_t>(m_Workers.size());
-    // if (id >= m_MaxNumOfWorkers)
-    // {
-    //     HLOG_ERROR("No available worker\n");
-    //     return UINT_MAX;
-    // }
-    // m_Workers.push_back(std::make_unique<Worker>(id));
-    // HLOG_INFO("Worker requested\n");
-    return 0;
+    std::lock_guard<std::mutex> guard(m_Mutex);
+    if (m_CurrentNumOfWorkers >= m_MaxNumOfWorkers)
+    {
+        HLOG_ERROR("No more workers can be created\n");
+        return UINT_MAX;
+    }
+    uint32_t id = m_JobPipeLines.size();
+    m_JobPipeLines.push_back(std::make_unique<JobPipeLine>(1));
+    HLOG_INFO("New pipeline created with id %d\n", id);
+    m_CurrentNumOfWorkers++;
+    return id;
 }
 
-bool JobSystem::ReleaseWorker(uint32_t workerId)
+bool JobSystem::DestroyPipeLine(uint32_t pipeLineID)
 {
-    // for (auto it = m_Workers.begin(); it != m_Workers.end(); it++)
-    // {
-    //     if ((*it)->GetWorkerID() == workerId)
-    //     {
-    //         m_Workers.erase(it);
-    //         HLOG_INFO("Worker released\n");
-    //         return true;
-    //     }
-    // }
-    // HLOG_ERROR("Not Found worker\n");
-    return false;
-}
-
-bool JobSystem::SubmitJob(std::unique_ptr<Job> &job)
-{
-    // std::lock_guard<std::mutex> guard(m_JobMutex);
-    // if (job == nullptr)
-    // {
-    //     HLOG_ERROR("Submitting a null job\n");
-    //     return false;
-    // }
-    // m_Jobs.push_back(std::move(job));
-    // m_JobCV.notify_all();
+    std::lock_guard<std::mutex> guard(m_Mutex);
+    if (pipeLineID >= m_JobPipeLines.size())
+    {
+        HLOG_ERROR("Invalid pipeline id\n");
+        return false;
+    }
+    m_JobPipeLines[pipeLineID].reset();
+    m_JobPipeLines.erase(m_JobPipeLines.begin() + pipeLineID);
+    m_CurrentNumOfWorkers--;
     return true;
 }
 
-bool JobSystem::Run()
+bool JobSystem::SubmitJob(std::unique_ptr<Job> &job, const uint32_t pipeLineID)
 {
-    // for (auto &worker : m_Workers)
-    // {
-    //     worker->Activate();
-    // }
-    return true;
-}
-
-bool JobSystem::IsFinished() const
-{
-    // for (auto &worker : m_Workers)
-    // {
-    //     if (!worker->IsBusy())
-    //     {
-    //         return false;
-    //     }
-    // }
+    std::lock_guard<std::mutex> guard(m_Mutex);
+    if (pipeLineID >= m_JobPipeLines.size() && pipeLineID != UINT_MAX)
+    {
+        HLOG_ERROR("Invalid pipeline id\n");
+        return false;
+    }
+    if (pipeLineID == UINT_MAX)
+    {
+        m_JobPipeLines[0]->PushJob(job);
+        HLOG_ERROR("Failed to submit job\n");
+        return false;
+    }
+    m_JobPipeLines[pipeLineID]->PushJob(job);
     return true;
 }
 
 void JobSystem::SortJobs(ScheduleStrategy strategy)
 {
-    // std::lock_guard<std::mutex> guard(m_JobMutex);
-    // switch (strategy)
-    // {
-    // case ScheduleStrategy::FIFO:
-    //     break;
-    // case ScheduleStrategy::LIFO:
-    //     std::reverse(m_Jobs.begin(), m_Jobs.end());
-    //     break;
-    // case ScheduleStrategy::PRIORITY:
-    //     std::sort(m_Jobs.begin(), m_Jobs.end());
-    //     break;
-    // default:
-    //     break;
-    // }
+    std::lock_guard<std::mutex> guard(m_Mutex);
+    for (auto &pipeline : m_JobPipeLines)
+    {
+        pipeline->SortJobs(strategy);
+    }
 }
 
 JobSystem *JobSystem::CreateJobSystem()

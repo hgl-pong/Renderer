@@ -33,7 +33,6 @@ public:
     Job(std::function<void()> executeFunction, uint32_t workerID = UINT_MAX, uint8_t priority = 0)
         : m_ExecuteFunction(executeFunction),
           m_IsFinished(false),
-          m_WorkerID(workerID),
           m_Priority(priority)
     {
     }
@@ -68,11 +67,6 @@ public:
         return res;
     }
 
-    uint32_t GetWorkerID() const
-    {
-        return m_WorkerID;
-    }
-
     friend inline bool operator<(const Job &a, const Job &b)
     {
         return a.m_Priority < b.m_Priority;
@@ -81,7 +75,6 @@ public:
     friend inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b);
 
 private:
-    uint32_t m_WorkerID = UINT_MAX;
     bool m_IsFinished = false;
     uint8_t m_Priority = 0;
     std::function<void()> m_ExecuteFunction;
@@ -95,16 +88,19 @@ inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> 
 class Worker
 {
 public:
-    Worker(uint32_t workerID = UINT_MAX) : m_IsRunning(true), m_WorkerID(workerID)
+    Worker() : m_IsRunning(true), m_WorkerID(workerID)
     {
         m_Thread = std::thread(&Worker::Run, this);
     }
 
     ~Worker()
     {
-        std::unique_lock<std::mutex> lock(m_Mutex);
-        m_Condition.wait(lock, [&]
-                         { return !m_IsRunning && m_CurrentJob == nullptr; });
+        if (m_Mutex != nullptr && m_Condition != nullptr)
+        {
+            std::unique_lock<std::mutex> lock(*m_Mutex);
+            m_Condition->wait(lock, [&]
+                              { return !m_IsRunning && m_CurrentJob == nullptr; });
+        }
         if (m_Thread.joinable())
         {
             m_Thread.join();
@@ -115,84 +111,90 @@ public:
     {
         while (m_IsRunning)
         {
+            if (m_Mutex == nullptr || m_Condition == nullptr)
             {
-                std::unique_lock<std::mutex> lock(m_Mutex);
-                m_Condition.wait(lock, [this]
-                                 { return !m_IsRunning || m_CurrentJob != nullptr; });
+                HLOG_ERROR("Mutex or Condition is not set\n");
+                break;
+            }
+            {
+                std::unique_lock<std::mutex> lock(*m_Mutex);
+                m_Condition->wait(lock, [this]
+                                  { return !m_IsRunning || m_CurrentJob != nullptr; });
                 if (!m_IsRunning)
                     break;
                 m_CurrentJob->Execute();
                 m_CurrentJob = nullptr;
             }
-            Activate();
         }
     }
 
-    void Activate()
+    void Reset()
     {
-        std::unique_lock<std::mutex> lock(m_Mutex);
+        if (m_Mutex != nullptr && m_Condition != nullptr)
         {
+            std::unique_lock<std::mutex> lock(*m_Mutex);
+            m_Condition->wait(lock, [&]
+                              { return !m_IsRunning && m_CurrentJob == nullptr; });
         }
-        lock.unlock();
-        if (m_CurrentJob != nullptr)
-            WakeUp();
-        else
-            Stop();
+        if (m_Thread.joinable())
+        {
+            m_Thread.join();
+        }
+        m_Thread = std::thread(&Worker::Run, this);
     }
 
     bool IsBusy() const
     {
-        std::lock_guard<std::mutex> guard(m_Mutex);
+        std::lock_guard<std::mutex> guard(*m_Mutex);
         return m_CurrentJob != nullptr;
     }
 
-    bool IsDedicated() const
+    bool IsInPipeLine() const
     {
-        return m_WorkerID != UINT_MAX;
-    }
-
-    void SetWorkerID(uint32_t workerID)
-    {
-        m_WorkerID = workerID;
-    }
-
-    uint32_t GetWorkerID() const
-    {
-        return m_WorkerID;
+        return m_Mutex != nullptr && m_Condition != nullptr;
     }
 
 private:
     void Stop()
     {
         {
-            std::lock_guard<std::mutex> guard(m_Mutex);
+            std::lock_guard<std::mutex> guard(*m_Mutex);
             m_IsRunning = false;
         }
-        m_Condition.notify_all();
+        m_Condition->notify_all();
     }
 
     bool WakeUp()
     {
         {
-            std::lock_guard<std::mutex> guard(m_Mutex);
+            std::lock_guard<std::mutex> guard(*m_Mutex);
             m_IsRunning = true;
         }
-        m_Condition.notify_all();
+        m_Condition->notify_all();
         return true;
     }
 
-    uint32_t m_WorkerID;
-    mutable std::mutex m_Mutex;
-    std::condition_variable m_Condition;
+private:
     std::atomic<bool> m_IsRunning;
     std::thread m_Thread;
     std::unique_ptr<Job> m_CurrentJob;
+    std::mutex *m_Mutex = nullptr;
+    std::condition_variable *m_Condition = nullptr;
 };
 
 class JobPipeLine
 {
 public:
-    JobPipeLine() = default;
+    JobPipeLine() = delete;
+    JobPipeLine(uint32_t workerCount)
+    {
+        m_Workers.reserve(workerCount);
+        for (uint32_t i = 0; i < workerCount; i++)
+        {
+            m_Workers.push_back(std::make_unique<Worker>());
+        }
+        HLOG_INFO("JobPipeLine created with %d workers\n", workerCount);
+    }
     ~JobPipeLine() = default;
     JobPipeLine(const JobPipeLine &) = delete;
     JobPipeLine(JobPipeLine &&) = delete;
@@ -221,6 +223,7 @@ public:
     bool TransferInWorker(std::unique_ptr<Worker> &worker)
     {
         std::lock_guard<std::mutex> guard(m_JobMutex);
+        worker->Reset();
         m_Workers.push_back(std::move(worker));
         return true;
     }
@@ -233,6 +236,7 @@ public:
         m_Workers.reserve(workers.size());
         for (auto &worker : workers)
         {
+            worker->Reset();
             m_Workers.push_back(std::move(worker));
         }
         return true;
@@ -267,9 +271,62 @@ public:
         return m_Jobs.empty();
     }
 
+    void SortJobs(ScheduleStrategy strategy)
+    {
+        std::lock_guard<std::mutex> guard(m_JobMutex);
+        switch (strategy)
+        {
+        case ScheduleStrategy::FIFO:
+            break;
+        case ScheduleStrategy::LIFO:
+            std::reverse(m_Jobs.begin(), m_Jobs.end());
+            break;
+        case ScheduleStrategy::PRIORITY:
+            std::sort(m_Jobs.begin(), m_Jobs.end());
+            break;
+        default:
+            break;
+        }
+    }
+
+    bool BorrowWorker(JobPipeLine *pipeLine)
+    {
+        std::lock_guard<std::mutex> guard(m_JobMutex);
+        if (m_Workers.empty())
+        {
+            return false;
+        }
+        std::unique_ptr<Worker> worker;
+        if (!TransferOutWorker(worker))
+        {
+            return false;
+        }
+        pipeLine->TransferInWorker(worker);
+        m_PipeLinesBorrowed.push_back(pipeLine);
+        return true;
+    }
+
+    bool CallReturnWorker(JobPipeLine *pipeLine)
+    {
+        std::lock_guard<std::mutex> guard(m_JobMutex);
+        if (m_PipeLinesBorrowed.empty())
+        {
+            return false;
+        }
+        std::vector<std::unique_ptr<Worker>> workers;
+        if (!pipeLine->TransferOutAllWorkers(workers))
+        {
+            return false;
+        }
+        TransferInWorkers(workers);
+        m_PipeLinesBorrowed.pop_back();
+        return true;
+    }
+
 private:
     std::deque<std::unique_ptr<Job>> m_Jobs;
     std::vector<std::unique_ptr<Worker>> m_Workers;
+    std::vector<JobPipeLine *> m_PipeLinesBorrowed;
     std::mutex m_JobMutex;
     std::condition_variable m_JobCV;
 };
@@ -281,16 +338,10 @@ private:
 
 public:
     ~JobSystem();
-    uint32_t RequestWorker();
-    bool ReleaseWorker(uint32_t workerId);
-
+    uint32_t CreateNewPipeLine();
+    bool DestroyPipeLine(uint32_t pipeLineID);
     void SortJobs(ScheduleStrategy strategy);
-    bool GetFirstJob(std::unique_ptr<Job> &job);
-    bool GetFirstJob(std::unique_ptr<Job> &job, uint32_t workerID);
-
-    bool SubmitJob(std::unique_ptr<Job> &job);
-    bool Run();
-    bool IsFinished() const;
+    bool SubmitJob(std::unique_ptr<Job> &job, const uint32_t pipeLineID = UINT_MAX);
 
 public:
     static JobSystem *CreateJobSystem();
@@ -298,11 +349,9 @@ public:
 
 private:
     uint32_t m_MaxNumOfWorkers = std::thread::hardware_concurrency();
-    bool m_bIsRunning = false;
-    std::vector<std::unique_ptr<Worker>> m_Workers;
-    std::deque<std::unique_ptr<Job>> m_Jobs;
-    std::condition_variable m_JobCV;
-    std::mutex m_JobMutex;
+    uint32_t m_CurrentNumOfWorkers = 0;
+    std::vector<std::unique_ptr<JobPipeLine>> m_JobPipeLines;
+    std::mutex m_Mutex;
 };
 
 inline bool GetJobSystem(JobSystem **jobSystem);
@@ -319,6 +368,5 @@ inline void TestJobSystem()
         jobSystem->SubmitJob(job);
     }
     jobSystem->SortJobs(ScheduleStrategy::PRIORITY);
-    jobSystem->Run();
 }
 #endif
