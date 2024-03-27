@@ -3,15 +3,115 @@
 
 static JobSystem *jobSystemSingleton = nullptr;
 static std::condition_variable jobSystemCV;
-
-class Factory
+Worker::Worker(JobPipeLine *pipeLine) : m_IsRunning(true)
 {
-public:
-    Factory() = default;
-    ~Factory() = default;
+    SetPipeLine(pipeLine);
+    m_Thread = std::thread(&Worker::Run, this);
+}
 
-private:
-};
+Worker::~Worker()
+{
+    if (m_Mutex != nullptr && m_Condition != nullptr)
+    {
+        std::unique_lock<std::mutex> lock(*m_Mutex);
+        m_Condition->wait(lock, [&]
+                          { return !m_IsRunning && m_PipeLine->IsIdle(); });
+    }
+    if (m_Thread.joinable())
+    {
+        m_Thread.join();
+    }
+}
+
+void Worker::Run()
+{
+    while (m_IsRunning)
+    {
+        if (m_Mutex == nullptr || m_Condition == nullptr)
+        {
+            HLOG_ERROR("Mutex or Condition is not set\n");
+            break;
+        }
+        {
+            std::unique_lock<std::mutex> lock(*m_Mutex);
+            m_Condition->wait(lock, [this]
+                              { return !m_IsRunning || (!m_PipeLine->IsIdle()); });
+            if (m_PipeLine)
+            {
+                m_PipeLine->PopJob(m_CurrentJob);
+            }
+            if (!m_IsRunning)
+                break;
+            m_CurrentJob->Execute();
+            m_CurrentJob = nullptr;
+        }
+    }
+}
+
+void Worker::Reset()
+{
+    if (m_Mutex != nullptr && m_Condition != nullptr)
+    {
+        std::unique_lock<std::mutex> lock(*m_Mutex);
+        m_Condition->wait(lock, [&]
+                          { return !m_IsRunning && m_PipeLine->IsIdle(); });
+    }
+    if (m_Thread.joinable())
+    {
+        m_Thread.join();
+    }
+    m_Thread = std::thread(&Worker::Run, this);
+}
+
+bool Worker::IsBusy() const
+{
+    if (m_Mutex == nullptr)
+        return false;
+    std::lock_guard<std::mutex> guard(*m_Mutex);
+    return m_CurrentJob != nullptr;
+}
+
+bool Worker::IsInPipeLine() const
+{
+    return m_Mutex != nullptr && m_Condition != nullptr;
+}
+
+bool Worker::SetPipeLine(JobPipeLine *pipeLine)
+{
+    if (IsBusy())
+    {
+        HLOG_ERROR("Worker is busy\n");
+        return false;
+    }
+    if (pipeLine == nullptr)
+    {
+        HLOG_ERROR("PipeLine is nullptr\n");
+        return false;
+    }
+    m_PipeLine = pipeLine;
+    m_Mutex = &pipeLine->m_JobMutex;
+    m_Condition = &pipeLine->m_JobCV;
+    return true;
+}
+
+void Worker::Stop()
+{
+    {
+        std::lock_guard<std::mutex> guard(*m_Mutex);
+        m_IsRunning = false;
+    }
+    m_Condition->notify_all();
+}
+
+bool Worker::WakeUp()
+{
+    {
+        std::lock_guard<std::mutex> guard(*m_Mutex);
+        m_IsRunning = true;
+    }
+    m_Condition->notify_all();
+    return true;
+}
 
 JobSystem::JobSystem()
 {
@@ -62,18 +162,13 @@ bool JobSystem::DestroyPipeLine(uint32_t pipeLineID)
 bool JobSystem::SubmitJob(std::unique_ptr<Job> &job, const uint32_t pipeLineID)
 {
     std::lock_guard<std::mutex> guard(m_Mutex);
-    if (pipeLineID >= m_JobPipeLines.size() && pipeLineID != UINT_MAX)
+    if (pipeLineID >= m_JobPipeLines.size())
     {
         HLOG_ERROR("Invalid pipeline id\n");
         return false;
     }
-    if (pipeLineID == UINT_MAX)
-    {
-        m_JobPipeLines[0]->PushJob(job);
-        HLOG_ERROR("Failed to submit job\n");
-        return false;
-    }
     m_JobPipeLines[pipeLineID]->PushJob(job);
+    HLOG_INFO("Job submitted\n");
     return true;
 }
 
