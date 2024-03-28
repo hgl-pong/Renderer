@@ -38,6 +38,7 @@ find_package(SDL2 CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(soil2 CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 
 target_include_directories(${MY_TARGET}
     PUBLIC
@@ -61,4 +62,7 @@ target_link_libraries(${MY_TARGET}
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     soil2
     rapidjson
+    TBB::tbb
+    TBB::tbbmalloc
+    TBB::tbbmalloc_proxy
 )
