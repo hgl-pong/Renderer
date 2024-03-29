@@ -1,6 +1,10 @@
 #include "Common/pch.h"
 #include <Engine/AssetLoader.h>
-
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/mesh.h>
+#include <assimp/postprocess.h>
+#include <SOIL2/SOIL2.h>
 void ModelLoader::ReadFile(const std::string &filename, Model &model)
 {
     auto it = m_models.find(filename);
@@ -110,3 +114,6 @@ void ImageLoader::ReadFile(const std::string &filename, Image &image)
     SOIL_free_image_data(pixels);
     m_images.emplace(std::make_pair(filename, image));
 }
+
+void MaterialLoader::ReadFile(const std::string& filename, IMaterial& asset)
+{}

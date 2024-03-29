@@ -1,7 +1,7 @@
 #pragma once
 #include "Common/pch.h"
 #include "Engine/RenderSystemInterface.h"
-
+#include <vulkan/vulkan.h>
 class VKRenderSystem;
 template <typename DataType>
 class VKRenderTexture : virtual public IRenderTexture, public RenderSystemResource

@@ -7,7 +7,7 @@ enum class ActorType
     Static,
     Dynamic,
 };
-class Actor
+class HAPI Actor
 {
 public:
     Actor();

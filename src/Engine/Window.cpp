@@ -1,6 +1,9 @@
 #include "Common/pch.h"
 #include "Engine/Window.h"
-
+#include <SDL2/SDL.h>
+#include <imgui.h>
+#include "../RenderSystem/imgui/imgui_impl_sdl2.h"
+#include "../RenderSystem/imgui/imgui_impl_sdlrenderer2.h"
 IWindow *CreateRenderWindow()
 {
 #ifdef EDITOR_MODE
@@ -124,6 +127,7 @@ public:
                 return window.get();
         }
         m_Windows.push_back(std::shared_ptr<ImguiWindow>(new ImguiGameViewWindow()));
+        return m_Windows.back().get();
     }
 
     void DestroyGameViewWindow()

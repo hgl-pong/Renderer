@@ -1,24 +1,18 @@
 set(RENDERER Renderer)
-file(GLOB_RECURSE SRC_FILES
-    ${PROJECT_SOURCE_DIR}/include/*.h
-    ${PROJECT_SOURCE_DIR}/include/Common/*.h
-    ${PROJECT_SOURCE_DIR}/include/RenderSystem/*.h
-    ${PROJECT_SOURCE_DIR}/include/Engine/*.h
-    *.h
+file(GLOB SRC_FILES
     *.cpp
-    RenderSystem/*.h
     RenderSystem/*.cpp
-    RenderSystem/imgui/*.h
     RenderSystem/imgui/*.cpp
     Engine/*.cpp
 )
-add_library(${RENDERER} SHARED ${SRC_FILES})
+# add_library(${RENDERER} SHARED ${SRC_FILES})
+add_executable(${RENDERER} ${SRC_FILES} ${PROJECT_SOURCE_DIR}/main.cpp)
+
 target_precompile_headers(${RENDERER} PRIVATE ${PROJECT_SOURCE_DIR}/include/Common/pch.h)
 
 target_include_directories(${RENDERER}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}ThirdParty/imgui
     PRIVATE
     ${OPENGL_INCLUDE_DIR}

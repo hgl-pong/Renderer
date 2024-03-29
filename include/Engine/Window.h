@@ -5,6 +5,8 @@
 #define EDITOR_MODE
 
 class ImguiWindowsFactory;
+struct SDL_Window;
+struct SDL_Renderer;
 class EditorWindow : virtual public IWindow
 {
 public:

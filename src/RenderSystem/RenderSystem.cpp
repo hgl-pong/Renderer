@@ -282,10 +282,10 @@ inline bool VKRenderSystem::_CreateSwapChain()
         int width, height;
         // glfwGetFramebufferSize(m_Window, &width, &height);
 
-        extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        //extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+        //extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        //extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
     }
 
     return false;
@@ -392,6 +392,7 @@ IRenderSystem *CreateRenderSystem(const RenderSystemType &type)
     default:
         break;
     }
+    return nullptr;
 }
 
 void DestroyRenderSystem(IRenderSystem *pRenderSystem)

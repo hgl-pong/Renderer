@@ -3,9 +3,14 @@ set(PROJECT_NAME Engine)
 project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable)
+# 全局设置使用动态运行时库
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable/${CMAKE_BUILD_TYPE})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable/${CMAKE_BUILD_TYPE})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable/${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
+add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
 # 编译ImGui库
 file(GLOB IMGUI_SOURCES "${PROJECT_SOURCE_DIR}/ThirdParty/imgui/*.cpp")
@@ -28,31 +33,15 @@ find_package(GTest CONFIG REQUIRED)
 add_subdirectory(src)
 add_subdirectory(tests)
 
-# 编译主程序的可执行文件
-add_executable(${PROJECT_NAME} main.cpp)
-target_include_directories(${PROJECT_NAME}
-    PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}ThirdParty/imgui
-    PRIVATE
-    ${OPENGL_INCLUDE_DIR}
-)
-target_link_libraries(${PROJECT_NAME} 
-	PRIVATE 
-	${RENDERER}
-	imgui 
-    ${OPENGL_LIBRARIES}
-    Vulkan::Vulkan
-    GLEW::GLEW
-    imgui
-    assimp::assimp
-    Eigen3::Eigen
-    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
-    soil2
-    rapidjson
-    TBB::tbb
-    TBB::tbbmalloc
-    TBB::tbbmalloc_proxy
-)
+# # 编译主程序的可执行文件
+# add_executable(${PROJECT_NAME} main.cpp)
+# target_include_directories(${PROJECT_NAME}
+#     PUBLIC
+#     ${PROJECT_SOURCE_DIR}/include
+# )
+# target_link_libraries(${PROJECT_NAME} 
+# 	PRIVATE 
+# 	${RENDERER}
+# 	Eigen3::Eigen  
+# 	rapidjson
+# )

@@ -138,7 +138,7 @@ uint32_t JobSystem::CreateNewPipeLine()
         HLOG_ERROR("No more workers can be created\n");
         return UINT_MAX;
     }
-    uint32_t id = m_JobPipeLines.size();
+    uint32_t id = static_cast<size_t>(m_JobPipeLines.size());
     m_JobPipeLines.push_back(std::make_unique<JobPipeLine>(1));
     HLOG_INFO("New pipeline created with id %d\n", id);
     m_CurrentNumOfWorkers++;

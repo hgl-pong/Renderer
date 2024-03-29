@@ -1,6 +1,7 @@
 #pragma once
 #include "Common/pch.h"
 #include "Engine/RenderSystemInterface.h"
+#include <vulkan/vulkan.h>
 class RenderSystemResourceIDPool
 {
 public:
