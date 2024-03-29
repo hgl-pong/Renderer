@@ -5,9 +5,7 @@ file(GLOB SRC_FILES
     RenderSystem/imgui/*.cpp
     Engine/*.cpp
 )
-# add_library(${RENDERER} SHARED ${SRC_FILES})
-add_executable(${RENDERER} ${SRC_FILES} ${PROJECT_SOURCE_DIR}/main.cpp)
-
+add_library(${RENDERER} STATIC ${SRC_FILES})
 target_precompile_headers(${RENDERER} PRIVATE ${PROJECT_SOURCE_DIR}/include/Common/pch.h)
 
 target_include_directories(${RENDERER}

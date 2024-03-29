@@ -34,14 +34,14 @@ add_subdirectory(src)
 add_subdirectory(tests)
 
 # # 编译主程序的可执行文件
-# add_executable(${PROJECT_NAME} main.cpp)
-# target_include_directories(${PROJECT_NAME}
-#     PUBLIC
-#     ${PROJECT_SOURCE_DIR}/include
-# )
-# target_link_libraries(${PROJECT_NAME} 
-# 	PRIVATE 
-# 	${RENDERER}
-# 	Eigen3::Eigen  
-# 	rapidjson
-# )
+add_executable(${PROJECT_NAME} main.cpp)
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+target_link_libraries(${PROJECT_NAME} 
+	PRIVATE 
+	Renderer
+	Eigen3::Eigen  
+	rapidjson
+)

@@ -12,7 +12,7 @@ target_include_directories(${UNIT_TEST}
 
 target_link_libraries(${UNIT_TEST}
     PRIVATE
-    ${RENDERER}
+    Renderer
     GTest::gtest 
     GTest::gtest_main 
     GTest::gmock 
