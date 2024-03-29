@@ -104,7 +104,7 @@ private:
     std::atomic<bool> m_IsRunning;
     std::thread m_Thread;
     std::unique_ptr<Job> m_CurrentJob;
-    JobPipeLine*m_PipeLine = nullptr;
+    JobPipeLine*m_PipeLine = nullptr; 
     std::mutex *m_Mutex = nullptr;
     std::condition_variable *m_Condition = nullptr;
 };
@@ -121,7 +121,7 @@ public:
             m_Workers.push_back(std::make_unique<Worker>(this));
         }
         HLOG_INFO("JobPipeLine created with %d workers\n", workerCount);
-    }
+    } 
     ~JobPipeLine() = default;
     JobPipeLine(const JobPipeLine &) = delete;
     JobPipeLine(JobPipeLine &&) = delete;

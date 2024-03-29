@@ -1,35 +1,18 @@
 ﻿cmake_minimum_required(VERSION 3.6)
-project(Renderer)
+set(PROJECT_NAME Engine)
+project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 20)
-
-set(MY_TARGET Renderer)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/executable)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
-# set(CMAKE_TOOLCHAIN_FILE ${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
-file(GLOB SOURCE_FILES
-    main.cpp
-    include/*.h
-    include/Common/*.h
-    include/RenderSystem/*.h
-    include/Engine/*.h
-    src/*.h
-    src/*.cpp
-    src/RenderSystem/*.h
-    src/RenderSystem/*.cpp
-    src/RenderSystem/imgui/*.h
-    src/RenderSystem/imgui/*.cpp
-    src/Engine/*.cpp
-)
-add_executable(${MY_TARGET} ${SOURCE_FILES})
-target_precompile_headers(${MY_TARGET} PRIVATE include/Common/pch.h)
-
-file(GLOB IMGUI_SOURCES ThirdParty/imgui/*.cpp)
+# 编译ImGui库
+file(GLOB IMGUI_SOURCES "${PROJECT_SOURCE_DIR}/ThirdParty/imgui/*.cpp")
 add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC "${PROJECT_SOURCE_DIR}/ThirdParty/imgui")
 
-# Add the required packages
+# 找到所需的包
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(assimp CONFIG REQUIRED)
@@ -39,19 +22,26 @@ find_package(Eigen3 CONFIG REQUIRED)
 find_package(soil2 CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 
-target_include_directories(${MY_TARGET}
+# 添加src子目录
+add_subdirectory(src)
+add_subdirectory(tests)
+
+# 编译主程序的可执行文件
+add_executable(${PROJECT_NAME} main.cpp)
+target_include_directories(${PROJECT_NAME}
     PUBLIC
-    ./include
-    ./src
-    ThirdParty/imgui
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}ThirdParty/imgui
     PRIVATE
     ${OPENGL_INCLUDE_DIR}
 )
-
-# Link the required libraries
-target_link_libraries(${MY_TARGET}
-    PRIVATE
+target_link_libraries(${PROJECT_NAME} 
+	PRIVATE 
+	${RENDERER}
+	imgui 
     ${OPENGL_LIBRARIES}
     Vulkan::Vulkan
     GLEW::GLEW
