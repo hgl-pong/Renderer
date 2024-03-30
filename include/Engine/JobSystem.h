@@ -74,6 +74,10 @@ public:
 
     friend inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b);
 
+    const uint8_t& GetPriority() const
+    {
+		return m_Priority;
+	}
 private:
     bool m_IsFinished = false;
     uint8_t m_Priority = 0;
@@ -113,142 +117,22 @@ class JobPipeLine
 {
 public:
     JobPipeLine() = delete;
-    JobPipeLine(uint32_t workerCount)
-    {
-        m_Workers.reserve(workerCount);
-        for (uint32_t i = 0; i < workerCount; i++)
-        {
-            m_Workers.push_back(std::make_unique<Worker>(this));
-        }
-        HLOG_INFO("JobPipeLine created with %d workers\n", workerCount);
-    } 
+    JobPipeLine(uint32_t workerCount);
     ~JobPipeLine() = default;
     JobPipeLine(const JobPipeLine &) = delete;
     JobPipeLine(JobPipeLine &&) = delete;
     JobPipeLine &operator=(const JobPipeLine &) = delete;
 
-    void PushJob(std::unique_ptr<Job> &job)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        m_Jobs.push_back(std::move(job));
-        m_JobCV.notify_one();
-    }
-
-    bool PopJob(std::unique_ptr<Job> &job)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (m_Jobs.empty())
-        {
-            m_JobCV.notify_all();
-            return false;
-        }
-        job = std::move(m_Jobs.front());
-        m_Jobs.pop_front();
-        return true;
-    }
-
-    bool TransferInWorker(std::unique_ptr<Worker> &worker)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        worker->Reset();
-        m_Workers.push_back(std::move(worker));
-        return true;
-    }
-
-    bool TransferInWorkers(std::vector<std::unique_ptr<Worker>> &workers)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (workers.empty())
-            return false;
-        m_Workers.reserve(workers.size());
-        for (auto &worker : workers)
-        {
-            worker->Reset();
-            m_Workers.push_back(std::move(worker));
-        }
-        return true;
-    }
-
-    bool TransferOutWorker(std::unique_ptr<Worker> &worker)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (m_Workers.empty())
-        {
-            return false;
-        }
-        worker = std::move(m_Workers.back());
-        m_Workers.pop_back();
-        return true;
-    }
-
-    bool TransferOutAllWorkers(std::vector<std::unique_ptr<Worker>> &workers)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (m_Workers.empty())
-        {
-            return false;
-        }
-        workers = std::move(m_Workers);
-        return true;
-    }
-
-    bool IsIdle()
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        return m_Jobs.empty();
-    }
-
-    void SortJobs(ScheduleStrategy strategy)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        switch (strategy)
-        {
-        case ScheduleStrategy::FIFO:
-            break;
-        case ScheduleStrategy::LIFO:
-            std::reverse(m_Jobs.begin(), m_Jobs.end());
-            break;
-        case ScheduleStrategy::PRIORITY:
-            std::sort(m_Jobs.begin(), m_Jobs.end());
-            break;
-        default:
-            break;
-        }
-    }
-
-    bool BorrowWorker(JobPipeLine *pipeLine)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (m_Workers.empty())
-        {
-            return false;
-        }
-        std::unique_ptr<Worker> worker;
-        if (!TransferOutWorker(worker))
-        {
-            return false;
-        }
-        pipeLine->TransferInWorker(worker);
-        m_PipeLinesBorrowed.push_back(pipeLine);
-        return true;
-    }
-
-    bool CallReturnWorker(JobPipeLine *pipeLine)
-    {
-        std::lock_guard<std::mutex> guard(m_QueueMutex);
-        if (m_PipeLinesBorrowed.empty())
-        {
-            return false;
-        }
-        std::vector<std::unique_ptr<Worker>> workers;
-        if (!pipeLine->TransferOutAllWorkers(workers))
-        {
-            return false;
-        }
-        TransferInWorkers(workers);
-        m_PipeLinesBorrowed.pop_back();
-        return true;
-    }
+    void PushJob(std::unique_ptr<Job>& job);
+    bool PopJob(std::unique_ptr<Job>& job);
+    bool TransferInWorker(std::unique_ptr<Worker>& worker);
+    bool TransferInWorkers(std::vector<std::unique_ptr<Worker>>& workers);
+    bool TransferOutWorker(std::unique_ptr<Worker>& worker);
+    bool TransferOutAllWorkers(std::vector<std::unique_ptr<Worker>>& workers);
+    bool IsIdle();
+    void SortJobs(ScheduleStrategy strategy);
+    bool BorrowWorker(JobPipeLine* pipeLine);
+    bool CallReturnWorker(JobPipeLine* pipeLine);
 
 private:
     friend class Worker;

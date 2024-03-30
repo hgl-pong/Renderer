@@ -270,6 +270,7 @@ void EditorWindow::SetPosition(int x, int y)
     if (m_Window == nullptr)
         return;
     m_Position = Vector2f(x, y);
+    SDL_SetWindowPosition(m_Window.get(), x, y);
 }
 
 void EditorWindow::SetIcon(const std::string &iconPath)

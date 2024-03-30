@@ -62,7 +62,7 @@ std::string JsonParser::WriteString()
     return buffer.GetString();
 }
 
-void JsonParser::AddValue(const std::string &key, const std::string &value)
+void JsonParser::AddKey(const std::string &key,const std::string &value)
 {
     rapidjson::Value k(key.c_str(), allocator);
     rapidjson::Value v(value.c_str(), allocator);
@@ -92,6 +92,50 @@ void JsonParser::RemoveValue(const std::string &key)
     document.RemoveMember(key.c_str());
 }
 
+void JsonParser::GetKey(const std::string& key, std::string& value)
+{
+    auto it = document.FindMember(key.c_str());
+    if (it == document.MemberEnd())
+    {
+		HLOG_ERROR("Key not found: %s\n", key.c_str());
+		return;
+	}
+    value = it ->value.GetString();
+}
+
+void JsonParser::GetValue(const std::string& key, int& value)
+{
+	auto it = document.FindMember(key.c_str());
+    if (it == document.MemberEnd())
+    {
+		HLOG_ERROR("Key not found: %s\n", key.c_str());
+		return;
+	}
+	value = it->value.GetInt();
+}
+
+void JsonParser::GetValue(const std::string& key, float& value)
+{
+	auto it = document.FindMember(key.c_str());
+    if (it == document.MemberEnd())
+    {
+		HLOG_ERROR("Key not found: %s\n", key.c_str());
+		return;
+	}
+	value = it->value.GetFloat();
+}
+
+void JsonParser::GetValue(const std::string& key, bool& value)
+{
+	auto it = document.FindMember(key.c_str());
+    if (it == document.MemberEnd())
+    {
+		HLOG_ERROR("Key not found: %s\n", key.c_str());
+		return;
+	}
+	value = it->value.GetBool();
+}
+	
 void JsonParser::Clear()
 {
     document.SetObject();

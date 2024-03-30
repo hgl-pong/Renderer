@@ -113,6 +113,139 @@ bool Worker::WakeUp()
     return true;
 }
 
+JobPipeLine::JobPipeLine(uint32_t workerCount)
+{
+    m_Workers.reserve(workerCount);
+    for (uint32_t i = 0; i < workerCount; i++)
+    {
+        m_Workers.push_back(std::make_unique<Worker>(this));
+    }
+    HLOG_INFO("JobPipeLine created with %d workers\n", workerCount);
+}
+
+void JobPipeLine::PushJob(std::unique_ptr<Job>& job)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    m_Jobs.push_back(std::move(job));
+    m_JobCV.notify_one();
+}
+
+bool JobPipeLine::PopJob(std::unique_ptr<Job>& job)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (m_Jobs.empty())
+    {
+        m_JobCV.notify_all();
+        return false;
+    }
+    job = std::move(m_Jobs.front());
+    m_Jobs.pop_front();
+    return true;
+}
+
+bool JobPipeLine::TransferInWorker(std::unique_ptr<Worker>& worker)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    worker->Reset();
+    m_Workers.push_back(std::move(worker));
+    return true;
+}
+
+bool JobPipeLine::TransferInWorkers(std::vector<std::unique_ptr<Worker>>& workers)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (workers.empty())
+        return false;
+    m_Workers.reserve(workers.size());
+    for (auto& worker : workers)
+    {
+        worker->Reset();
+        m_Workers.push_back(std::move(worker));
+    }
+    return true;
+}
+
+bool JobPipeLine::TransferOutWorker(std::unique_ptr<Worker>& worker)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (m_Workers.empty())
+    {
+        return false;
+    }
+    worker = std::move(m_Workers.back());
+    m_Workers.pop_back();
+    return true;
+}
+
+bool JobPipeLine::TransferOutAllWorkers(std::vector<std::unique_ptr<Worker>>& workers)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (m_Workers.empty())
+    {
+        return false;
+    }
+    workers = std::move(m_Workers);
+    return true;
+}
+
+bool JobPipeLine::IsIdle()
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    return m_Jobs.empty();
+}
+
+void JobPipeLine::SortJobs(ScheduleStrategy strategy)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    switch (strategy)
+    {
+    case ScheduleStrategy::FIFO:
+        break;
+    case ScheduleStrategy::LIFO:
+        std::reverse(m_Jobs.begin(), m_Jobs.end());
+        break;
+    case ScheduleStrategy::PRIORITY:
+        std::sort(m_Jobs.begin(), m_Jobs.end());
+        break;
+    default:
+        break;
+    }
+}
+
+bool JobPipeLine::BorrowWorker(JobPipeLine* pipeLine)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (m_Workers.empty())
+    {
+        return false;
+    }
+    std::unique_ptr<Worker> worker;
+    if (!TransferOutWorker(worker))
+    {
+        return false;
+    }
+    pipeLine->TransferInWorker(worker);
+    m_PipeLinesBorrowed.push_back(pipeLine);
+    return true;
+}
+
+bool JobPipeLine::CallReturnWorker(JobPipeLine* pipeLine)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMutex);
+    if (m_PipeLinesBorrowed.empty())
+    {
+        return false;
+    }
+    std::vector<std::unique_ptr<Worker>> workers;
+    if (!pipeLine->TransferOutAllWorkers(workers))
+    {
+        return false;
+    }
+    TransferInWorkers(workers);
+    m_PipeLinesBorrowed.pop_back();
+    return true;
+}
+
 JobSystem::JobSystem()
 {
     HLOG_INFO("JobSystem created\n");

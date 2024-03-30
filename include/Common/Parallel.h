@@ -6,29 +6,15 @@
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_sort.h>
 #include <tbb/parallel_reduce.h>
-#endif // USE_TBB
+#endif
 
 namespace Parallel
 {
+#ifdef USE_TBB
     enum class ExecutePolicy
     {
-        eSerial,
+        eSequential,
         eParallel,
-    };
-
-#ifdef USE_TBB
-    template <typename RandomIterator, typename T>
-    void ParallelFill(const RandomIterator &begin, const RandomIterator &end,
-                      const T &value, ExecutePolicy policy = ExecutePolicy::eParallel)
-    {
-        auto diff = end - begin;
-        if (diff <= 0)
-            return;
-        size_t size = static_cast<size_t>(diff);
-        ParallelFor(
-            0, size, [begin, value](size_t i)
-            { begin[i] = value; },
-            policy);
     };
 
     template <typename IndexType, typename Function>
@@ -42,7 +28,7 @@ namespace Parallel
         else
         {
             for (auto i = beginIndex; i < endIndex; ++i)
-                func(i);
+                function(i);
         }
     };
 
@@ -55,12 +41,12 @@ namespace Parallel
 
         if (policy == ExecutePolicy::eParallel)
             tbb::parallel_for(tbb::blocked_range<IndexType>(beginIndex, endIndex),
-                              [&func](const tbb::blocked_range<IndexType> &range)
+                              [&function](const tbb::blocked_range<IndexType> &range)
                               {
-                                  func(range.begin(), range.end());
+                                  function(range.begin(), range.end());
                               });
         else
-            func(beginIndex, endIndex);
+            function(beginIndex, endIndex);
     }
 
     template <typename IndexType, typename Function>
@@ -68,7 +54,7 @@ namespace Parallel
                      IndexType beginIndexY, IndexType endIndexY,
                      const Function &function, ExecutePolicy policy = ExecutePolicy::eParallel)
     {
-        ParallelFor(
+        ParallelFor<IndexType, std::function<void(IndexType)>>(
             beginIndexY, endIndexY,
             [&](IndexType j)
             {
@@ -82,7 +68,7 @@ namespace Parallel
                           IndexType beginIndexY, IndexType endIndexY,
                           const Function &function, ExecutePolicy policy = ExecutePolicy::eParallel)
     {
-        ParallelRangeFor(
+        ParallelRangeFor<IndexType, std::function<void(IndexType,IndexType)>>(
             beginIndexY, endIndexY,
             [&](IndexType jBegin, IndexType jEnd)
             { function(beginIndexX, endIndexX, jBegin, jEnd); },
@@ -95,7 +81,7 @@ namespace Parallel
                      IndexType beginIndexZ, IndexType endIndexZ,
                      const Function &function, ExecutePolicy policy = ExecutePolicy::eParallel)
     {
-        ParallelFor(
+        ParallelFor<IndexType, std::function<void(IndexType)>>(
             beginIndexZ, endIndexZ,
             [&](IndexType k)
             {
@@ -124,12 +110,12 @@ namespace Parallel
                          const Value &identity, const Function &func,
                          const Reduce &reduce, ExecutePolicy policy = ExecutePolicy::eParallel)
     {
-        if (start > end)
+        if (beginIndex > endIndex)
             return identity;
         if (policy == ExecutePolicy::eParallel)
         {
             return tbb::parallel_reduce(
-                tbb::blocked_range<IndexType>(start, end), identity,
+                tbb::blocked_range<IndexType>(beginIndex, endIndex), identity,
                 [&func](const tbb::blocked_range<IndexType> &range, const Value &init)
                 { return func(range.begin(), range.end(), init); },
                 reduce);
@@ -137,12 +123,26 @@ namespace Parallel
         else
         {
             (void)reduce;
-            return func(start, end, identity);
+            return func(beginIndex, endIndex, identity);
         }
     }
 
-    template <typename RandomIterator>
-    void ParallelSort(RandomIterator begin, RandomIterator end,
+    template <typename RandomIterator, typename T>
+    void ParallelFill(const RandomIterator& begin, const RandomIterator& end,
+        const T& value, ExecutePolicy policy = ExecutePolicy::eParallel)
+    {
+        auto diff = end - begin;
+        if (diff <= 0)
+            return;
+        size_t size = static_cast<size_t>(diff);
+        ParallelFor<size_t,std::function<void(size_t)>>(
+            0, size, [begin, value](size_t i)
+            { begin[i] = value; },
+            policy);
+    };
+
+    template <typename RandomIterator, typename CompareFunction>
+    void ParallelSort(RandomIterator begin, RandomIterator end, CompareFunction compareFunction = std::less<typename std::iterator_traits<RandomIterator>::value_type>(),
                       ExecutePolicy policy = ExecutePolicy::eParallel)
     {
         if (end < begin)
@@ -153,13 +153,5 @@ namespace Parallel
             std::sort(begin, end, compareFunction);
     }
 
-    template <typename RandomIterator, typename CompareFunction>
-    void ParallelSort(RandomIterator begin, RandomIterator end,
-                      CompareFunction compare, ExecutePolicy policy = ExecutePolicy::eParallel)
-    {
-        ParallelSort(begin, end,
-                     std::less<typename std::iterator_traits<RandomIterator>::value_type>(),
-                     policy);
-    }
-#endif
+#endif // USE_TBB
 } // namespace Parallel

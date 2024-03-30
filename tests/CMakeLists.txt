@@ -8,6 +8,7 @@ add_executable(${UNIT_TEST} ${TEST_FILES})
 target_include_directories(${UNIT_TEST}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+    ./
 )
 
 target_link_libraries(${UNIT_TEST}
@@ -20,4 +21,4 @@ target_link_libraries(${UNIT_TEST}
 ) 
 
 enable_testing()
-add_test(NAME ${UNIT_TEST} COMMAND TestMain)
+add_test(AllTestsInMain main)

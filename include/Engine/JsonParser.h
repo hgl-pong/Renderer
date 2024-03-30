@@ -14,11 +14,15 @@ public:
     void ParseString(const std::string &json);
     void Write(const std::string &filename);
     std::string WriteString();
-    void AddValue(const std::string &key, const std::string &value);
+    void AddKey(const std::string &key,const std::string &value);
     void AddValue(const std::string &key, int value);
     void AddValue(const std::string &key, float value);
     void AddValue(const std::string &key, bool value);
     void RemoveValue(const std::string &key);
+    void GetKey(const std::string &key, std::string &value);
+    void GetValue(const std::string &key, int &value);
+    void GetValue(const std::string &key, float &value);
+    void GetValue(const std::string &key, bool &value);
     void Clear();
 
     friend inline std::ostream &operator<<(std::ostream &stream, JsonParser &parser);

@@ -17,6 +17,7 @@ public:
     void CreateRenderWindow(const std::string &title, int width, int height) override;
     void DestroyRenderWindow() override;
     void SetTitle(const std::string &title) override;
+    std::string GetTitle() const {return m_Title;}
     void SetSize(int width, int height) override;
     void SetVSync(bool vsync) override;
     void SetFullscreen(bool fullscreen) override;
@@ -36,6 +37,7 @@ public:
     bool IsMouseCursorVisible() const override;
     Vector2f GetPosition() const override;
     void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem) override;
+    
 
 public:
 private:
