@@ -107,22 +107,24 @@ namespace Parallel
 
     template <typename IndexType, typename Value, typename Function, typename Reduce>
     Value ParallelReduce(IndexType beginIndex, IndexType endIndex,
-                         const Value &identity, const Function &func,
-                         const Reduce &reduce, ExecutePolicy policy = ExecutePolicy::eParallel)
+        const Value& identity, const Function& func,
+        const Reduce& reduce, ExecutePolicy policy = ExecutePolicy::eParallel)
     {
-        if (beginIndex > endIndex)
+        if (beginIndex >= endIndex)
             return identity;
+
         if (policy == ExecutePolicy::eParallel)
         {
             return tbb::parallel_reduce(
                 tbb::blocked_range<IndexType>(beginIndex, endIndex), identity,
-                [&func](const tbb::blocked_range<IndexType> &range, const Value &init)
-                { return func(range.begin(), range.end(), init); },
+                [&](const tbb::blocked_range<IndexType>& range, Value init) -> Value
+                {
+                    return func(range.begin(), range.end(), init);
+                },
                 reduce);
         }
         else
         {
-            (void)reduce;
             return func(beginIndex, endIndex, identity);
         }
     }
