@@ -68,10 +68,17 @@ inline void VKRenderSystem::Shutdown()
 
 inline void VKRenderSystem::BeginFrame()
 {
+	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    if (m_ImagesInFlight[imageIndex] != VK_NULL_HANDLE)
+        vkWaitForFences(m_Device, 1, &m_ImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 }
 
 inline void VKRenderSystem::EndFrame()
 {
+
 }
 
 inline void VKRenderSystem::Clear(const Vector4f &color)
@@ -173,28 +180,11 @@ inline bool VKRenderSystem::_PickPhysicalDevice()
 inline bool VKRenderSystem::_CreateLogicalDevice()
 {
     bool bResult = true;
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    uint32_t graphicsFamily = UINT_MAX;
-    uint32_t presentFamily = UINT_MAX;
-
-    for (uint32_t i = 0; i < queueFamilyCount; i++)
-    {
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            graphicsFamily = i;
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, i, m_Surface, &presentSupport);
-        if (presentSupport)
-            presentFamily = i;
-        if (graphicsFamily != UINT_MAX && presentFamily != UINT_MAX)
-            break;
-    }
-
+    VKQueueFamilyIndices indices;
+    if (!_GetQueueFamilyIndices(indices))
+		return false;
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {graphicsFamily, presentFamily};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
     {
@@ -233,8 +223,8 @@ inline bool VKRenderSystem::_CreateLogicalDevice()
         bResult = false;
         return false;
     }
-    vkGetDeviceQueue(m_Device, graphicsFamily, 0, &m_GraphicsQueue);
-    vkGetDeviceQueue(m_Device, presentFamily, 0, &m_PresentQueue);
+    vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
+    vkGetDeviceQueue(m_Device, indices.presentFamily, 0, &m_PresentQueue);
     return bResult;
 }
 
@@ -313,7 +303,15 @@ inline bool VKRenderSystem::_CreateFramebuffers()
 
 inline bool VKRenderSystem::_CreateCommandPool()
 {
-    return false;
+    VKQueueFamilyIndices indices;
+    if (!_GetQueueFamilyIndices(indices))
+		return false;
+    VkCommandPoolCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    createInfo.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    createInfo.queueFamilyIndex = indices.graphicsFamily;
+    HASSERT_VK(vkCreateCommandPool(m_Device, &createInfo, nullptr, &m_CommandPool));
+    return true;
 }
 
 inline bool VKRenderSystem::_CreateCommandBuffers()
@@ -370,6 +368,31 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
     }
     return VK_TRUE;
 };
+
+bool VKRenderSystem::_GetQueueFamilyIndices(VKQueueFamilyIndices& indices)
+{   
+    bool bResult = false;
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, queueFamilies.data());
+
+    uint32_t graphicsFamily = UINT_MAX;
+    uint32_t presentFamily = UINT_MAX;
+
+    for (uint32_t i = 0; i < queueFamilyCount; i++)
+    {
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            graphicsFamily = i;
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, i, m_Surface, &presentSupport);
+        if (presentSupport)
+            presentFamily = i;
+        if (graphicsFamily != UINT_MAX && presentFamily != UINT_MAX)
+            break;
+    }
+    return true;
+}
 
 //////////////////////////////////////////////////////////////////////////RenderSystem Factory//////////////////////////////////////////////////////////////////////////
 

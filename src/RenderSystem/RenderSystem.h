@@ -59,6 +59,18 @@ private:
 
 class VKRenderSystem : virtual public IRenderSystem
 {
+private:
+    struct VKQueueFamilyIndices
+    {
+        uint32_t graphicsFamily = UINT32_MAX;
+        uint32_t presentFamily = UINT32_MAX;
+
+        bool IsComplete()
+        {
+            return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;
+        }
+    };
+
 public:
     void PreInitialize() override;
     void PostInitialize() override;
@@ -93,13 +105,14 @@ private:
     bool _CreateFramebuffers();
     bool _CreateCommandPool();
     bool _CreateCommandBuffers();
+    bool _GetQueueFamilyIndices(VKQueueFamilyIndices &indices);
 
     bool _CheckValidationLayerSupport();
     static VkBool32 _DebugMessageCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-        void *pUserData);
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
 
 private:
     VkInstance m_Instance = VK_NULL_HANDLE;
