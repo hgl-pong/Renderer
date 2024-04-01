@@ -68,17 +68,16 @@ inline void VKRenderSystem::Shutdown()
 
 inline void VKRenderSystem::BeginFrame()
 {
-	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
-	uint32_t imageIndex;
-	vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
     if (m_ImagesInFlight[imageIndex] != VK_NULL_HANDLE)
         vkWaitForFences(m_Device, 1, &m_ImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 }
 
 inline void VKRenderSystem::EndFrame()
 {
-
 }
 
 inline void VKRenderSystem::Clear(const Vector4f &color)
@@ -182,7 +181,7 @@ inline bool VKRenderSystem::_CreateLogicalDevice()
     bool bResult = true;
     VKQueueFamilyIndices indices;
     if (!_GetQueueFamilyIndices(indices))
-		return false;
+        return false;
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
     float queuePriority = 1.0f;
@@ -272,10 +271,10 @@ inline bool VKRenderSystem::_CreateSwapChain()
         int width, height;
         // glfwGetFramebufferSize(m_Window, &width, &height);
 
-        //extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        // extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        //extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        //extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+        // extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        // extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
     }
 
     return false;
@@ -283,6 +282,26 @@ inline bool VKRenderSystem::_CreateSwapChain()
 
 inline bool VKRenderSystem::_CreateImageViews()
 {
+    m_SwapChainImageViews.resize(m_SwapChainImages.size());
+
+    for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+    {
+        VkImageViewCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        createInfo.image = m_SwapChainImages[i];
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = m_SwapChainImageFormat;
+        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+        HASSERT_VK(vkCreateImageView(m_Device, &createInfo, nullptr, &m_SwapChainImageViews[i]));
+    }
     return false;
 }
 
@@ -298,6 +317,23 @@ inline bool VKRenderSystem::_CreateGraphicsPipeline()
 
 inline bool VKRenderSystem::_CreateFramebuffers()
 {
+    m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+
+    for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
+    {
+        VkImageView attachments[] = {m_SwapChainImageViews[i]};
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_RenderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = m_SwapChainExtent.width;
+        framebufferInfo.height = m_SwapChainExtent.height;
+        framebufferInfo.layers = 1;
+        framebufferInfo.layers = 1;
+
+        HASSERT_VK(vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]));
+    }
     return false;
 }
 
@@ -305,10 +341,10 @@ inline bool VKRenderSystem::_CreateCommandPool()
 {
     VKQueueFamilyIndices indices;
     if (!_GetQueueFamilyIndices(indices))
-		return false;
+        return false;
     VkCommandPoolCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    createInfo.flags=VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     createInfo.queueFamilyIndex = indices.graphicsFamily;
     HASSERT_VK(vkCreateCommandPool(m_Device, &createInfo, nullptr, &m_CommandPool));
     return true;
@@ -316,6 +352,14 @@ inline bool VKRenderSystem::_CreateCommandPool()
 
 inline bool VKRenderSystem::_CreateCommandBuffers()
 {
+    m_CommandBuffers.resize(m_SwapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = m_CommandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
+    HASSERT_VK(vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffers.data()));
     return false;
 }
 
@@ -369,8 +413,8 @@ VkBool32 VKRenderSystem::_DebugMessageCallback(
     return VK_TRUE;
 };
 
-bool VKRenderSystem::_GetQueueFamilyIndices(VKQueueFamilyIndices& indices)
-{   
+bool VKRenderSystem::_GetQueueFamilyIndices(VKQueueFamilyIndices &indices)
+{
     bool bResult = false;
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
