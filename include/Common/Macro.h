@@ -39,11 +39,21 @@
         }                                  \
     } while (false)
 #endif
+
 #define VK_RELEASE(object, deleter, device) \
     if (object != VK_NULL_HANDLE)           \
     {                                       \
         deleter(device, object, nullptr);   \
         object = VK_NULL_HANDLE;            \
     }
-
+#define VK_CHECK_RESULT(f)                                                                                  \
+    {                                                                                                       \
+        VkResult res = (f);                                                                                 \
+        if (res != VK_SUCCESS)                                                                              \
+        {                                                                                                   \
+            std::cerr << "Fatal : VkResult is \"" << res << "\" in " << __FILE__ << " at line " << __LINE__ \
+                      << std::endl;                                                                         \
+            std::abort();                                                                                   \
+        }                                                                                                   \
+    }
 #define MODULE_TEST 1
