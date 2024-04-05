@@ -2,6 +2,20 @@
 #include "Common/pch.h"
 #include "Engine/RenderSystemInterface.h"
 #include <vulkan/vulkan.h>
+
+#define CALL_VK_RENDER_SYSTEM(func,...) \
+	do{\
+         VKRenderSystem* renderSystem=dynamic_cast<VKRenderSystem*>(GetRenderSystem()); \
+        if(renderSystem) \
+		 {\
+			 renderSystem->func(##__VA_ARGS__); \
+		 }\
+		 else\
+		 {\
+			 HLOG_ERROR("RenderSystem is nullptr");\
+		 }\
+    } while (false);
+
 class RenderSystemResourceIDPool
 {
 public:
@@ -91,6 +105,9 @@ public:
     void ReleaseBufferID(uint32_t id) { m_BufferIDPool.ReleaseID(id); }
 
     VkDevice GetDevice() const { return m_Device; }
+
+    bool CreateVKBuffer(const RenderBufferDesc& desc, VkBuffer** buffer, VkDeviceMemory** memory);
+    bool DestroyVKBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
 private:
     bool _CreateInstance();

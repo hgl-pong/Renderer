@@ -6,6 +6,7 @@
 #include "RenderSystem.h"
 
 #define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
+IRenderSystem* singleTonRenderSystem = nullptr;
 
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Public//////////////////////////////////////////////////////////////////////////
 inline void VKRenderSystem::PreInitialize()
@@ -82,6 +83,33 @@ inline void VKRenderSystem::EndFrame()
 
 inline void VKRenderSystem::Clear(const Vector4f &color)
 {
+}
+
+inline bool VKRenderSystem::CreateVKBuffer(const RenderBufferDesc& desc, VkBuffer** buffer, VkDeviceMemory** memory)
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = desc.mElementCount * desc.mElementSize;
+	//bufferInfo.usage = desc.usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	HASSERT_VK(vkCreateBuffer(m_Device, &bufferInfo, nullptr, *buffer));
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(m_Device, **buffer, &memRequirements);
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = 0;
+	HASSERT_VK(vkAllocateMemory(m_Device, &allocInfo, nullptr, *memory));
+	vkBindBufferMemory(m_Device, **buffer, **memory, 0);
+	return true;
+}
+
+
+inline bool VKRenderSystem::DestroyVKBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    VK_RELEASE(buffer, vkDestroyBuffer, m_Device);
+    VK_RELEASE(bufferMemory, vkFreeMemory, m_Device);
+	return false;
 }
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Private//////////////////////////////////////////////////////////////////////////
 inline bool VKRenderSystem::_CreateInstance()
@@ -460,6 +488,11 @@ IRenderSystem *CreateRenderSystem(const RenderSystemType &type)
         break;
     }
     return nullptr;
+}
+
+IRenderSystem* GetRenderSystem()
+{
+	return singleTonRenderSystem;
 }
 
 void DestroyRenderSystem(IRenderSystem *pRenderSystem)

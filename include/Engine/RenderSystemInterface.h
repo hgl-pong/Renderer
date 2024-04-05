@@ -184,4 +184,5 @@ public:
 };
 
 HAPI IRenderSystem *CreateRenderSystem(const RenderSystemType &type);
+HAPI IRenderSystem *GetRenderSystem();
 HAPI void DestroyRenderSystem(IRenderSystem *pRenderSystem);
