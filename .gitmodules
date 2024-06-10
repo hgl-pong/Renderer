@@ -2,3 +2,6 @@
 	path = ThirdParty/imgui
 	url = git@github.com:ocornut/imgui.git
 	branch = docking
+[submodule "ThirdParty/HMath"]
+	path = ThirdParty/HMath
+	url = https://github.com/hgl-pong/HMath.git
