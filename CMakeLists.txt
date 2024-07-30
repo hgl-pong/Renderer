@@ -27,20 +27,39 @@ find_package(soil2 CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 
 # 添加src子目录
 add_subdirectory(src)
 add_subdirectory(tests)
+
+# 设置shader编译脚本的路径
+set(SHADER_COMPILE_SCRIPT ${CMAKE_SOURCE_DIR}/shaders/CompileGLSL.bat)
+
+# 添加一个自定义命令来运行shader编译脚本
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/shaders_compiled
+    COMMAND ${SHADER_COMPILE_SCRIPT}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/shaders
+    COMMENT "Compiling GLSL shaders to SPIR-V"
+)
+
+# 添加一个自定义目标，依赖于上面的自定义命令
+add_custom_target(compile_shaders ALL
+    DEPENDS ${CMAKE_BINARY_DIR}/shaders_compiled
+)
 
 # # 编译主程序的可执行文件
 add_executable(${PROJECT_NAME} main.cpp)
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+	${PROJECT_SOURCE_DIR}/ThirdParty/HMath/include
 )
 target_link_libraries(${PROJECT_NAME} 
 	PRIVATE 
 	Renderer
 	Eigen3::Eigen  
 	rapidjson
+	glfw
 )

@@ -8,6 +8,7 @@ add_executable(${UNIT_TEST} ${TEST_FILES})
 target_include_directories(${UNIT_TEST}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+	${PROJECT_SOURCE_DIR}/ThirdParty/HMath/include
     ./
 )
 

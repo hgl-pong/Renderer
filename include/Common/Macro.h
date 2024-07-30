@@ -9,15 +9,15 @@
 #define HAPI
 #endif
 #if _DEBUG
-#define HASSERT(condition)                                                                             \
-    do                                                                                                 \
-    {                                                                                                  \
-        if (!(condition))                                                                              \
-        {                                                                                              \
-            std::cerr << "\033[31mAssertion failed: (" << #condition << "), function " << __FUNCTION__ \
-                      << ", file " << __FILE__ << ", line " << __LINE__ << "\033[0m" << std::endl;     \
-            std::abort();                                                                              \
-        }                                                                                              \
+#define HASSERT(condition)                                                      \
+    do                                                                          \
+    {                                                                           \
+        if (!(condition))                                                       \
+        {                                                                       \
+            HLOG_ERROR("Assertion failed: (%s), function %s, file %s, line %d", \
+                       #condition, __FUNCTION__, __FILE__, __LINE__);           \
+            std::abort();                                                       \
+        }                                                                       \
     } while (false)
 #define HASSERT_LOG(condition, log) HASSERT(condition)
 #else

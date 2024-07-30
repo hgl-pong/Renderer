@@ -3,6 +3,7 @@ file(GLOB SRC_FILES
     *.cpp
     RenderSystem/*.cpp
     RenderSystem/imgui/*.cpp
+    RenderSystem/DX11/*
     Engine/*.cpp
 )
 add_library(${RENDERER} STATIC ${SRC_FILES})
@@ -12,6 +13,7 @@ target_include_directories(${RENDERER}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}ThirdParty/imgui
+	${PROJECT_SOURCE_DIR}/ThirdParty/HMath/include
     PRIVATE
     ${OPENGL_INCLUDE_DIR}
 )
