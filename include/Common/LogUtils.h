@@ -78,3 +78,10 @@ inline void LogMessage(const int &level, const std::string &msg, Args &&...args)
 #define HLOG_INFO(msg, ...) HLOG(LOG_LEVEL_INFO, msg, ##__VA_ARGS__)
 #define HLOG_WARNING(msg, ...) HLOG(LOG_LEVEL_WARNING, msg, ##__VA_ARGS__)
 #define HLOG_ERROR(msg, ...) HLOG(LOG_LEVEL_ERROR, msg, ##__VA_ARGS__)
+
+
+#define MATHLOG(level, msg, ...) HLOG(level, msg, ...)
+#define MATHLOG_VERBOSE(msg, ...) HLOG_VERBOSE(msg, ...)
+#define MATHLOG_INFO(msg, ...)    HLOG_INFO(msg, ...)
+#define MATHLOG_WARNING(msg, ...) HLOG_WARNING(msg, ...)
+#define MATHLOG_ERROR(msg, ...)   HLOG_ERROR(msg, ...) 

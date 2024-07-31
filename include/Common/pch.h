@@ -19,12 +19,12 @@
 #include <chrono>
 #include <future>
 
-// Third-party
-
-#include <Eigen/Eigen>
-
 // Custom
 #include "LogUtils.h"
 #include "Macro.h"
+
+// Third-party
+#include <Math/Math.h>
+
 #include "Types.h"
 #include "Functions.h"

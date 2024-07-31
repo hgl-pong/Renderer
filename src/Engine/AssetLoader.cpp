@@ -38,7 +38,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
         for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
         {
             aiVector3D vertex = mesh->mVertices[j];
-            newMesh.mVertices.push_back(Vector3f(vertex.x, vertex.y, vertex.z));
+            newMesh.mVertices.push_back(MathLib::HVector3(vertex.x, vertex.y, vertex.z));
         }
         if (mesh->HasNormals())
         {
@@ -46,7 +46,7 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
             for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
             {
                 aiVector3D normal = mesh->mNormals[j];
-                newMesh.mNormals.push_back(Vector3f(normal.x, normal.y, normal.z));
+                newMesh.mNormals.push_back(MathLib::HVector3(normal.x, normal.y, normal.z));
             }
         }
         if (mesh->HasTangentsAndBitangents())
@@ -55,18 +55,18 @@ void ModelLoader::ReadFile(const std::string &filename, Model &model)
             for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
             {
                 aiVector3D tangent = mesh->mTangents[j];
-                newMesh.mTangents.push_back(Vector4f(tangent.x, tangent.y, tangent.z, 0.0f));
+                newMesh.mTangents.push_back(MathLib::HVector4(tangent.x, tangent.y, tangent.z, 0.0f));
             }
         }
         for (uint32_t j = 0; j < mesh->GetNumUVChannels(); ++j)
         {
             if (mesh->HasTextureCoords(j))
             {
-                newMesh.mTexCoordsArray.push_back(std::vector<Vector2f>(mesh->mNumVertices));
+                newMesh.mTexCoordsArray.push_back(std::vector<MathLib::HVector2>(mesh->mNumVertices));
                 for (uint32_t k = 0; k < mesh->mNumVertices; ++k)
                 {
                     aiVector3D texCoord = mesh->mTextureCoords[j][k];
-                    newMesh.mTexCoordsArray[j].push_back(Vector2f(texCoord.x, texCoord.y));
+                    newMesh.mTexCoordsArray[j].push_back(MathLib::HVector2(texCoord.x, texCoord.y));
                 }
             }
             else

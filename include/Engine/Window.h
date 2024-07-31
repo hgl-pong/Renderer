@@ -5,7 +5,7 @@
 #define EDITOR_MODE
 
 class ImguiWindowsFactory;
-struct SDL_Window;
+struct GLFWwindow;
 struct SDL_Renderer;
 class EditorWindow : virtual public IWindow
 {
@@ -25,7 +25,7 @@ public:
     void SetMouseCursorVisible(bool visible) override;
     void SetPosition(int x, int y) override;
     void SetIcon(const std::string &iconPath) override;
-    void SetClearColor(const Vector4f &color) override;
+    void SetClearColor(const MathLib::HVector4&color) override;
     void Clear() override;
     void Display() override;
     bool IsOpen() const override;
@@ -35,15 +35,14 @@ public:
     bool IsFullscreen() const override;
     bool IsVisible() const override;
     bool IsMouseCursorVisible() const override;
-    Vector2f GetPosition() const override;
+    MathLib::HVector2 GetPosition() const override;
     void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem) override;
     
 
 public:
 private:
     std::shared_ptr<IRenderSystem> m_RenderSystem;
-    std::shared_ptr<SDL_Window> m_Window;
-    std::shared_ptr<SDL_Renderer> m_Renderer;
+    std::shared_ptr<GLFWwindow> m_Window;
     std::shared_ptr<ImguiWindowsFactory> m_ImguiWindowsFactory;
     std::string m_Title;
     int m_Width;
@@ -52,8 +51,8 @@ private:
     bool m_FullsScreen;
     bool m_Visible;
     bool m_MouseCursorVisible;
-    Vector4f m_ClearColor;
-    Vector2f m_Position;
+    MathLib::HVector4 m_ClearColor;
+    MathLib::HVector2 m_Position;
 };
 
 #if MODULE_TEST
@@ -67,7 +66,7 @@ inline bool TestEditorWindow()
     window.SetMouseCursorVisible(true);
     window.SetPosition(100, 100);
     window.SetIcon("icon.png");
-    window.SetClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f));
+    window.SetClearColor(MathLib::HVector4(0.0f, 0.0f, 0.0f, 1.0f));
     window.Clear();
     window.Display();
     bool isOpen = window.IsOpen();
@@ -84,7 +83,7 @@ inline bool TestEditorWindow()
     HLOG_INFO("Window Is Visible: %d\n", visible);
     bool mouseCursorVisible = window.IsMouseCursorVisible();
     HLOG_INFO("Window Mouse Cursor Visible: %d\n", mouseCursorVisible);
-    Vector2f position = window.GetPosition();
+    MathLib::HVector2 position = window.GetPosition();
     HLOG_INFO("Window Position: (%f, %f)\n", position.x(), position.y());
     while (window.IsOpen())
     {

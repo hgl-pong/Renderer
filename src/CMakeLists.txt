@@ -25,14 +25,9 @@ target_link_libraries(${RENDERER}
     Vulkan::Vulkan
     GLEW::GLEW
     imgui
+    glfw
     assimp::assimp
-    Eigen3::Eigen
-    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
-    soil2
+    Eigen3::Eigen 
     rapidjson
-    TBB::tbb
-    TBB::tbbmalloc
-    TBB::tbbmalloc_proxy
 ) 
 

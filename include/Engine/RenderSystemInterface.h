@@ -70,7 +70,7 @@ struct RenderTextureDesc
     uint32_t mMiscFlags;
     uint32_t mFormat;
     uint32_t mClearFlags;
-    Vector4f mClearColor;
+    MathLib::HVector4 mClearColor;
     float mClearDepth;
     uint32_t mClearStencil;
     bool mIsCubeMap;
@@ -167,7 +167,7 @@ public:
     virtual void Shutdown() = 0;
     virtual void BeginFrame() = 0;
     virtual void EndFrame() = 0;
-    virtual void Clear(const Vector4f &color) = 0;
+    virtual void Clear(const MathLib::HVector4 &color) = 0;
     virtual RenderSystemType GetRenderSystemType() const = 0;
 
     // virtual IRenderShader *CreateShader() = 0;

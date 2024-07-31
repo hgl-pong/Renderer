@@ -91,7 +91,7 @@ public:
     void Shutdown() override;
     void BeginFrame() override;
     void EndFrame() override;
-    void Clear(const Vector4f &color) override;
+    void Clear(const MathLib::HVector4&color) override;
     RenderSystemType GetRenderSystemType() const override { return RenderSystemType::Vulkan; }
 
 public:

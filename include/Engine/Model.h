@@ -14,6 +14,6 @@ public:
 
 private:
     friend class ModelLoader;
-    BoundingBox m_BoundingBox;
+    MathLib::HAABBox3D m_BoundingBox;
     std::vector<Mesh> m_Meshes;
 };

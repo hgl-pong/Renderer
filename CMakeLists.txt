@@ -21,11 +21,8 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
-find_package(SDL2 CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
-find_package(soil2 CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
-find_package(TBB CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 
@@ -61,5 +58,4 @@ target_link_libraries(${PROJECT_NAME}
 	Renderer
 	Eigen3::Eigen  
 	rapidjson
-	glfw
 )

@@ -1,9 +1,8 @@
 #include "Common/pch.h"
 #include "Engine/Window.h"
-#include <SDL2/SDL.h>
+#include <GLFW/glfw3.h>
 #include <imgui.h>
-#include "../RenderSystem/imgui/imgui_impl_sdl2.h"
-#include "../RenderSystem/imgui/imgui_impl_sdlrenderer2.h"
+#include "../RenderSystem/imgui/imgui_impl_glfw.h"
 IWindow *CreateRenderWindow()
 {
 #ifdef EDITOR_MODE
@@ -56,10 +55,9 @@ public:
 class ImguiWindowsFactory
 {
 public:
-    ImguiWindowsFactory(std::shared_ptr<SDL_Window> &window, std::shared_ptr<SDL_Renderer> &renderer)
+    ImguiWindowsFactory(std::shared_ptr<GLFWwindow> &window)
     {
         m_Window = window;
-        m_Renderer = renderer;
     }
     void SetUp()
     {
@@ -74,30 +72,25 @@ public:
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplSDL2_InitForSDLRenderer(m_Window.get(), m_Renderer.get());
-        ImGui_ImplSDLRenderer2_Init(m_Renderer.get());
+        ImGui_ImplGlfw_InitForOther(m_Window.get(), true);
     }
 
     void ShutDown()
     {
-        ImGui_ImplSDLRenderer2_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
 
-    void ProcessEvents(const SDL_Event *event)
+    void ProcessEvents()
     {
-        ImGui_ImplSDL2_ProcessEvent(event);
     }
 
     void RenderWindows()
     {
         ImGuiIO &io = ImGui::GetIO();
         (void)io;
-        ImGui_ImplSDLRenderer2_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
         ImGui::ShowDemoWindow();
         for (auto &window : m_Windows)
@@ -106,17 +99,6 @@ public:
         }
 
         ImGui::Render();
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            SDL_Window *backup_current_window = SDL_GL_GetCurrentWindow();
-            SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-        }
-        SDL_RenderSetScale(m_Renderer.get(), io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-        SDL_RenderPresent(m_Renderer.get());
     }
 
     ImguiWindow *CreateGameViewWindow()
@@ -143,8 +125,7 @@ public:
     }
 
 private:
-    std::shared_ptr<SDL_Window> m_Window;
-    std::shared_ptr<SDL_Renderer> m_Renderer;
+    std::shared_ptr<GLFWwindow> m_Window;
     std::vector<std::shared_ptr<ImguiWindow>> m_Windows;
 };
 
@@ -158,8 +139,8 @@ EditorWindow::EditorWindow()
       m_FullsScreen(false),
       m_Visible(true),
       m_MouseCursorVisible(true),
-      m_ClearColor(Vector4f(0.0f, 0.0f, 0.0f, 1.0f)),
-      m_Position(Vector2f(0.0f, 0.0f))
+      m_ClearColor(MathLib::HVector4(0.0f, 0.0f, 0.0f, 1.0f)),
+      m_Position(MathLib::HVector2(0.0f, 0.0f))
 {
 }
 
@@ -175,17 +156,13 @@ void EditorWindow::CreateRenderWindow(const std::string &title, int width, int h
     m_Height = height;
     try
     {
-        HASSERT_LOG(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) == 0, "SDL_Init failed");
-        // From 2.0.18: Enable native IME.
-#ifdef SDL_HINT_IME_SHOW_UI
-        SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-#endif
-        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_Window = std::shared_ptr<SDL_Window>(SDL_CreateWindow(m_Title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_Width, m_Height, window_flags), SDL_DestroyWindow);
-        HASSERT_LOG(m_Window != nullptr, "SDL_CreateWindow failed");
-        m_Renderer = std::shared_ptr<SDL_Renderer>(SDL_CreateRenderer(m_Window.get(), -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED), SDL_DestroyRenderer);
-        HASSERT_LOG(m_Renderer != nullptr, "SDL_CreateRenderer failed");
-        m_ImguiWindowsFactory = std::shared_ptr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window, m_Renderer));
+        HASSERT_LOG(glfwInit() == GLFW_FALSE, "SDL_Init failed");
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+        m_Window = std::shared_ptr<GLFWwindow>(glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr));
+        HASSERT_LOG(m_Window != nullptr, "glfwCreateWindow failed");
+        m_ImguiWindowsFactory = std::shared_ptr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window));
         HASSERT_LOG(m_ImguiWindowsFactory != nullptr, "Create ImguiWindowsFactory failed");
         m_ImguiWindowsFactory->SetUp();
         m_ImguiWindowsFactory->CreateGameViewWindow();
@@ -200,7 +177,7 @@ void EditorWindow::DestroyRenderWindow()
 {
     if (m_Window != nullptr)
     {
-        SDL_DestroyWindow(m_Window.get());
+        glfwDestroyWindow(m_Window.get());
         m_Window = nullptr;
     }
     if (m_ImguiWindowsFactory != nullptr)
@@ -208,12 +185,7 @@ void EditorWindow::DestroyRenderWindow()
         m_ImguiWindowsFactory->ShutDown();
         m_ImguiWindowsFactory = nullptr;
     }
-    if (m_Renderer != nullptr)
-    {
-        SDL_DestroyRenderer(m_Renderer.get());
-        m_Renderer = nullptr;
-    }
-    SDL_Quit();
+    glfwTerminate();
 }
 
 void EditorWindow::SetTitle(const std::string &title)
@@ -221,7 +193,7 @@ void EditorWindow::SetTitle(const std::string &title)
     if (m_Window == nullptr)
         return;
     m_Title = title;
-    SDL_SetWindowTitle(m_Window.get(), m_Title.c_str());
+    glfwSetWindowTitle(m_Window.get(), m_Title.c_str());
 }
 
 void EditorWindow::SetSize(int width, int height)
@@ -230,7 +202,7 @@ void EditorWindow::SetSize(int width, int height)
         return;
     m_Width = width;
     m_Height = height;
-    SDL_SetWindowSize(m_Window.get(), m_Width, m_Height);
+    glfwSetWindowSize(m_Window.get(), m_Width, m_Height);
 }
 
 void EditorWindow::SetVSync(bool vsync)
@@ -238,7 +210,6 @@ void EditorWindow::SetVSync(bool vsync)
     if (m_Window == nullptr)
         return;
     m_VSync = vsync;
-    SDL_GL_SetSwapInterval(m_VSync ? 1 : 0);
 }
 
 void EditorWindow::SetFullscreen(bool fullscreen)
@@ -246,7 +217,24 @@ void EditorWindow::SetFullscreen(bool fullscreen)
     if (m_Window == nullptr)
         return;
     m_FullsScreen = fullscreen;
-    SDL_SetWindowFullscreen(m_Window.get(), m_FullsScreen ? SDL_WINDOW_FULLSCREEN : 0);
+    GLFWwindow *window = m_Window.get();
+    int windowed_xpos, windowed_ypos, windowed_width, windowed_height;
+    if (glfwGetWindowMonitor(window))
+    {
+        // 当前是全屏，切换到窗口模式
+        glfwSetWindowMonitor(window, NULL, windowed_xpos, windowed_ypos, windowed_width, windowed_height, 0);
+    }
+    else
+    {
+        // 当前是窗口模式，保存窗口位置和大小
+        glfwGetWindowPos(window, &windowed_xpos, &windowed_ypos);
+        glfwGetWindowSize(window, &windowed_width, &windowed_height);
+
+        // 切换到全屏模式
+        GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+    }
 }
 
 void EditorWindow::SetVisible(bool visible)
@@ -254,7 +242,10 @@ void EditorWindow::SetVisible(bool visible)
     if (m_Window == nullptr)
         return;
     m_Visible = visible;
-    SDL_ShowWindow(m_Window.get());
+    if (m_Visible)
+        glfwShowWindow(m_Window.get());
+    else
+        glfwHideWindow(m_Window.get());
 }
 
 void EditorWindow::SetMouseCursorVisible(bool visible)
@@ -262,15 +253,15 @@ void EditorWindow::SetMouseCursorVisible(bool visible)
     if (m_Window == nullptr)
         return;
     m_MouseCursorVisible = visible;
-    SDL_ShowCursor(m_MouseCursorVisible ? 1 : 0);
+    glfwSetInputMode(m_Window.get(), GLFW_CURSOR, m_MouseCursorVisible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 }
 
 void EditorWindow::SetPosition(int x, int y)
 {
     if (m_Window == nullptr)
         return;
-    m_Position = Vector2f(x, y);
-    SDL_SetWindowPosition(m_Window.get(), x, y);
+    m_Position = MathLib::HVector2(x, y);
+    glfwSetWindowPos(m_Window.get(), x, y);
 }
 
 void EditorWindow::SetIcon(const std::string &iconPath)
@@ -279,7 +270,7 @@ void EditorWindow::SetIcon(const std::string &iconPath)
         return;
 }
 
-void EditorWindow::SetClearColor(const Vector4f &color)
+void EditorWindow::SetClearColor(const MathLib::HVector4 &color)
 {
     m_ClearColor = color;
 }
@@ -291,11 +282,6 @@ void EditorWindow::Clear()
 
     if (m_Window == nullptr)
         return;
-
-    SDL_SetRenderDrawColor(m_Renderer.get(), (Uint8)(m_ClearColor[0] * 255),
-                           (Uint8)(m_ClearColor[1] * 255), (Uint8)(m_ClearColor[2] * 255),
-                           (Uint8)(m_ClearColor[3] * 255));
-    SDL_RenderClear(m_Renderer.get());
 }
 
 void EditorWindow::Display()
@@ -309,25 +295,15 @@ void EditorWindow::Display()
     }
     if (m_ImguiWindowsFactory != nullptr)
         m_ImguiWindowsFactory->RenderWindows();
-    SDL_UpdateWindowSurface(m_Window.get());
+
+    glfwPollEvents();
 }
 
 bool EditorWindow::IsOpen() const
 {
     if (m_Window == nullptr)
         return false;
-    SDL_Event e;
-    while (SDL_PollEvent(&e) != 0)
-    {
-        if (m_ImguiWindowsFactory != nullptr)
-            m_ImguiWindowsFactory->ProcessEvents(&e);
-        // 用户请求退出
-        if (e.type == SDL_QUIT)
-        {
-            return false;
-        }
-    }
-    return true;
+    return !glfwWindowShouldClose(m_Window.get());
 }
 
 int EditorWindow::GetWidth() const
@@ -360,13 +336,13 @@ bool EditorWindow::IsMouseCursorVisible() const
     return m_MouseCursorVisible;
 }
 
-Vector2f EditorWindow::GetPosition() const
+MathLib::HVector2 EditorWindow::GetPosition() const
 {
     if (m_Window == nullptr)
-        return Vector2f();
+        return MathLib::HVector2();
     int x, y;
-    SDL_GetWindowPosition(m_Window.get(), &x, &y);
-    return Vector2f(x, y);
+    glfwGetWindowPos(m_Window.get(), &x, &y);
+    return MathLib::HVector2(x, y);
 }
 
 void EditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
