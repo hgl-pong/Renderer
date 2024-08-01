@@ -18,7 +18,6 @@ public:
     void Update();
     void Stop();
     void Shutdown();
-  
 
 private:
     bool m_bIsRunning;
@@ -26,8 +25,8 @@ private:
     PhysicsModule *m_physicsModule = nullptr;
     RenderModule *m_renderModule = nullptr;
 
-    std::shared_ptr<IRenderSystem> m_RenderSystem = nullptr;
-    std::vector<std::shared_ptr<IPlugin>> m_Plugins;
+    SharedPtr<IRenderSystem> m_RenderSystem = nullptr;
+    std::vector<SharedPtr<IPlugin>> m_Plugins;
 };
 
 inline bool GetEngine(Engine **engine);

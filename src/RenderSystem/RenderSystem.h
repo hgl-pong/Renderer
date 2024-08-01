@@ -1,19 +1,21 @@
 #pragma once
 #include "Common/pch.h"
+#include "Engine/EngineInterface.h"
 #include "Engine/RenderSystemInterface.h"
 #include <vulkan/vulkan.h>
 
-#define CALL_VK_RENDER_SYSTEM(func,...) \
-	do{\
-         VKRenderSystem* renderSystem=dynamic_cast<VKRenderSystem*>(GetRenderSystem()); \
-        if(renderSystem) \
-		 {\
-			 renderSystem->func(##__VA_ARGS__); \
-		 }\
-		 else\
-		 {\
-			 HLOG_ERROR("RenderSystem is nullptr");\
-		 }\
+#define CALL_VK_RENDER_SYSTEM(func, ...)                                                        \
+    do                                                                                          \
+    {                                                                                           \
+        VKRenderSystem *renderSystem = dynamic_cast<VKRenderSystem *>(GetRenderSystem().get()); \
+        if (renderSystem)                                                                       \
+        {                                                                                       \
+            renderSystem->func(##__VA_ARGS__);                                                  \
+        }                                                                                       \
+        else                                                                                    \
+        {                                                                                       \
+            HLOG_ERROR("RenderSystem is nullptr");                                              \
+        }                                                                                       \
     } while (false);
 
 class RenderSystemResourceIDPool
@@ -91,8 +93,9 @@ public:
     void Shutdown() override;
     void BeginFrame() override;
     void EndFrame() override;
-    void Clear(const MathLib::HVector4&color) override;
+    void Clear(const MathLib::HVector4 &color) override;
     RenderSystemType GetRenderSystemType() const override { return RenderSystemType::Vulkan; }
+    void SetWindowHandle(void *pHandle) override;
 
 public:
     uint32_t AcquireShaderID() { return m_ShaderIDPool.AcquireID(); }
@@ -106,8 +109,8 @@ public:
 
     VkDevice GetDevice() const { return m_Device; }
 
-    bool CreateVKBuffer(const RenderBufferDesc& desc, VkBuffer** buffer, VkDeviceMemory** memory);
-    bool DestroyVKBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    bool CreateVKBuffer(const RenderBufferDesc &desc, VkBuffer **buffer, VkDeviceMemory **memory);
+    bool DestroyVKBuffer(VkBuffer &buffer, VkDeviceMemory &bufferMemory);
 
 private:
     bool _CreateInstance();
@@ -128,10 +131,11 @@ private:
     static VkBool32 _DebugMessageCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageTypes,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+        void *pUserData);
 
 private:
+    void *m_pWindow = nullptr;
     VkInstance m_Instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
     VkDevice m_Device = VK_NULL_HANDLE;

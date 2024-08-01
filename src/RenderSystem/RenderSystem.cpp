@@ -4,9 +4,10 @@
 #include "RenderTexture.h"
 #include "RenderBuffer.h"
 #include "RenderSystem.h"
+#include <GLFW/glfw3.h>
 
 #define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
-IRenderSystem *singleTonRenderSystem = nullptr;
+SharedPtr<IRenderSystem> singleTonRenderSystem = nullptr;
 
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Public//////////////////////////////////////////////////////////////////////////
 inline void VKRenderSystem::PreInitialize()
@@ -14,6 +15,7 @@ inline void VKRenderSystem::PreInitialize()
     bool bResult = true;
     try
     {
+        HASSERT_LOG(m_pWindow != nullptr, "Create Window And Bind RenderSystem First!");
         HASSERT(_CreateInstance());
         HASSERT(_SetupDebugMessenger());
         HASSERT(_CreateSurface());
@@ -81,8 +83,13 @@ inline void VKRenderSystem::EndFrame()
 {
 }
 
-inline void VKRenderSystem::Clear(const MathLib::HVector4&color)
+inline void VKRenderSystem::Clear(const MathLib::HVector4 &color)
 {
+}
+
+inline void VKRenderSystem::SetWindowHandle(void *pWindow)
+{
+    m_pWindow = pWindow;
 }
 
 inline bool VKRenderSystem::CreateVKBuffer(const RenderBufferDesc &desc, VkBuffer **buffer, VkDeviceMemory **memory)
@@ -168,8 +175,8 @@ inline bool VKRenderSystem::_SetupDebugMessenger()
 
 inline bool VKRenderSystem::_CreateSurface()
 {
-
-    return true;
+    GLFWwindow *window = reinterpret_cast<GLFWwindow *>(m_pWindow);
+    return glfwCreateWindowSurface(m_Instance, window, nullptr, &m_Surface) == VK_SUCCESS;
 }
 
 inline bool VKRenderSystem::_PickPhysicalDevice()
@@ -468,34 +475,38 @@ bool VKRenderSystem::_GetQueueFamilyIndices(VKQueueFamilyIndices &indices)
 
 //////////////////////////////////////////////////////////////////////////RenderSystem Factory//////////////////////////////////////////////////////////////////////////
 
-IRenderSystem *CreateRenderSystem(const RenderSystemType &type)
+SharedPtr<IRenderSystem> CreateRenderSystem(const RenderSystemType &type)
 {
+    if (singleTonRenderSystem != nullptr)
+        return singleTonRenderSystem;
     switch (type)
     {
     case RenderSystemType::Vulkan:
-        return new VKRenderSystem();
+        singleTonRenderSystem = MakeSharedPtr<VKRenderSystem>();
         break;
     case RenderSystemType::DirectX11:
-        return nullptr;
+        singleTonRenderSystem = nullptr;
         break;
     case RenderSystemType::DirectX12:
-        return nullptr;
+        singleTonRenderSystem = nullptr;
         break;
     case RenderSystemType::OpenGL:
-        return nullptr;
+        singleTonRenderSystem = nullptr;
         break;
     default:
         break;
     }
-    return nullptr;
-}
-
-IRenderSystem *GetRenderSystem()
-{
     return singleTonRenderSystem;
 }
 
-void DestroyRenderSystem(IRenderSystem *pRenderSystem)
+SharedPtr<IRenderSystem> GetRenderSystem()
 {
-    delete pRenderSystem;
+    if (singleTonRenderSystem == nullptr)
+        return singleTonRenderSystem;
+    return singleTonRenderSystem;
+}
+
+void DestroyRenderSystem(SharedPtr<IRenderSystem> &pRenderSystem)
+{
+    pRenderSystem->Shutdown();
 }

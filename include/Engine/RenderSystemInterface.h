@@ -1,4 +1,5 @@
 #pragma once
+#include "Common/pch.h"
 class IRenderShader;
 class IRenderState;
 class IRenderTexture;
@@ -153,6 +154,7 @@ protected:
 
 enum class RenderSystemType
 {
+    UnKnown,
     Vulkan,
     DirectX11,
     DirectX12,
@@ -169,7 +171,7 @@ public:
     virtual void EndFrame() = 0;
     virtual void Clear(const MathLib::HVector4 &color) = 0;
     virtual RenderSystemType GetRenderSystemType() const = 0;
-
+    virtual void SetWindowHandle(void *pHandle) = 0;
     // virtual IRenderShader *CreateShader() = 0;
     // virtual IRenderState *CreateRenderState() = 0;
     // virtual IRenderTexture *CreateTexture() = 0;
@@ -183,6 +185,6 @@ public:
     // virtual void DestroyUint(IRenderUint *pUint) = 0;
 };
 
-HAPI IRenderSystem *CreateRenderSystem(const RenderSystemType &type);
-HAPI IRenderSystem *GetRenderSystem();
-HAPI void DestroyRenderSystem(IRenderSystem *pRenderSystem);
+HAPI SharedPtr<IRenderSystem> CreateRenderSystem(const RenderSystemType &type);
+HAPI SharedPtr<IRenderSystem> GetRenderSystem();
+HAPI void DestroyRenderSystem(SharedPtr<IRenderSystem> &pRenderSystem);

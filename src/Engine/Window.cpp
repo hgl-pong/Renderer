@@ -55,11 +55,11 @@ public:
 class ImguiWindowsFactory
 {
 public:
-    ImguiWindowsFactory(std::shared_ptr<GLFWwindow> &window)
+    ImguiWindowsFactory(SharedPtr<GLFWwindow> &window)
     {
         m_Window = window;
     }
-    void SetUp()
+    void SetUp(const RenderSystemType &type)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -72,13 +72,33 @@ public:
 
         ImGui::StyleColorsDark();
 
-        ImGui_ImplGlfw_InitForOther(m_Window.get(), true);
+        switch (type)
+        {
+        case RenderSystemType::Vulkan:
+            ImGui_ImplGlfw_InitForVulkan(m_Window.get(), true);
+            break;
+        case RenderSystemType::OpenGL:
+            ImGui_ImplGlfw_InitForOpenGL(m_Window.get(), true);
+            break;
+        case RenderSystemType::DirectX11:
+            break;
+        case RenderSystemType::DirectX12:
+            break;
+        default:
+            break;
+        }
     }
 
     void ShutDown()
     {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+    }
+
+    void ReSet(const RenderSystemType &type)
+    {
+        ShutDown();
+        SetUp(type);
     }
 
     void ProcessEvents()
@@ -108,7 +128,7 @@ public:
             if (window->GetType() == ImguiWindowType::GameView)
                 return window.get();
         }
-        m_Windows.push_back(std::shared_ptr<ImguiWindow>(new ImguiGameViewWindow()));
+        m_Windows.push_back(SharedPtr<ImguiWindow>(new ImguiGameViewWindow()));
         return m_Windows.back().get();
     }
 
@@ -125,8 +145,8 @@ public:
     }
 
 private:
-    std::shared_ptr<GLFWwindow> m_Window;
-    std::vector<std::shared_ptr<ImguiWindow>> m_Windows;
+    SharedPtr<GLFWwindow> m_Window;
+    std::vector<SharedPtr<ImguiWindow>> m_Windows;
 };
 
 EditorWindow::EditorWindow()
@@ -156,15 +176,15 @@ void EditorWindow::CreateRenderWindow(const std::string &title, int width, int h
     m_Height = height;
     try
     {
-        HASSERT_LOG(glfwInit() == GLFW_FALSE, "SDL_Init failed");
+        glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        m_Window = std::shared_ptr<GLFWwindow>(glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr));
+        m_Window = SharedPtr<GLFWwindow>(glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr));
         HASSERT_LOG(m_Window != nullptr, "glfwCreateWindow failed");
-        m_ImguiWindowsFactory = std::shared_ptr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window));
+        m_ImguiWindowsFactory = SharedPtr<ImguiWindowsFactory>(new ImguiWindowsFactory(m_Window));
         HASSERT_LOG(m_ImguiWindowsFactory != nullptr, "Create ImguiWindowsFactory failed");
-        m_ImguiWindowsFactory->SetUp();
+        m_ImguiWindowsFactory->SetUp(GetRenderSystemType());
         m_ImguiWindowsFactory->CreateGameViewWindow();
     }
     catch (const std::exception &e)
@@ -345,7 +365,17 @@ MathLib::HVector2 EditorWindow::GetPosition() const
     return MathLib::HVector2(x, y);
 }
 
-void EditorWindow::BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem)
+void EditorWindow::BindRenderSystem(SharedPtr<IRenderSystem> &renderSystem)
 {
     m_RenderSystem = renderSystem;
+    m_RenderSystem->SetWindowHandle(m_Window.get());
+    if (m_ImguiWindowsFactory != nullptr)
+        m_ImguiWindowsFactory->ReSet(renderSystem->GetRenderSystemType());
+}
+
+RenderSystemType EditorWindow::GetRenderSystemType() const
+{
+    if (m_RenderSystem)
+        return m_RenderSystem->GetRenderSystemType();
+    return RenderSystemType::UnKnown;
 }

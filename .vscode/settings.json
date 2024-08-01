@@ -3,10 +3,10 @@
     "CMAKE_TOOLCHAIN_FILE": "${env.VCPKG_PATH}\\scripts\\buildsystems\\vcpkg.cmake"
   },
   "files.associations": {
+    "*.hlsl": "hlsl",
     "*.ush": "hlsl",
     "*.fx5": "hlsl",
     "*.h5": "hlsl",
-    "*.hlsl": "hlsl",
     "unordered_map": "cpp",
     "xstring": "cpp",
     "algorithm": "cpp",
@@ -98,6 +98,11 @@
     "stack": "cpp",
     "*.ipp": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "any": "cpp",
+    "coroutine": "cpp",
+    "filesystem": "cpp",
+    "memory_resource": "cpp",
+    "resumable": "cpp"
   }
 }

@@ -76,12 +76,12 @@ public:
         return false;
     }
 
-    bool ExportData(std::shared_ptr<DataType> &data) const
+    bool ExportData(SharedPtr<DataType> &data) const
     {
         return false;
     }
 
-    bool ImportData(const std::shared_ptr<DataType> &data)
+    bool ImportData(const SharedPtr<DataType> &data)
     {
         return false;
     }
@@ -89,7 +89,7 @@ public:
 private:
 private:
     RenderTextureDesc m_Desc;
-    std::shared_ptr<VKRenderSystem> m_RenderSystem;
+    SharedPtr<VKRenderSystem> m_RenderSystem;
     VkImage m_TextureImage = VK_NULL_HANDLE;
     VkImageView m_TextureImageView = VK_NULL_HANDLE;
     VkDeviceMemory m_TextureMemory = VK_NULL_HANDLE;

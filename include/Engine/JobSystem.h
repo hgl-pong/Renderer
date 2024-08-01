@@ -72,19 +72,20 @@ public:
         return a.m_Priority < b.m_Priority;
     }
 
-    friend inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b);
+    friend inline bool operator<(const UniquePtr<Job> &a, const UniquePtr<Job> &b);
 
-    const uint8_t& GetPriority() const
+    const uint8_t &GetPriority() const
     {
-		return m_Priority;
-	}
+        return m_Priority;
+    }
+
 private:
     bool m_IsFinished = false;
     uint8_t m_Priority = 0;
     std::function<void()> m_ExecuteFunction;
 };
 
-inline bool operator<(const std::unique_ptr<Job> &a, const std::unique_ptr<Job> &b)
+inline bool operator<(const UniquePtr<Job> &a, const UniquePtr<Job> &b)
 {
     return a->m_Priority < b->m_Priority;
 };
@@ -93,13 +94,14 @@ class Worker
 {
 public:
     Worker() = delete;
-    Worker(JobPipeLine* pipeLine);
+    Worker(JobPipeLine *pipeLine);
     ~Worker();
     void Run();
     void Reset();
     bool IsBusy() const;
     bool IsInPipeLine() const;
-    bool SetPipeLine(JobPipeLine* pipeLine);
+    bool SetPipeLine(JobPipeLine *pipeLine);
+
 private:
     void Stop();
     bool WakeUp();
@@ -107,8 +109,8 @@ private:
 private:
     std::atomic<bool> m_IsRunning;
     std::thread m_Thread;
-    std::unique_ptr<Job> m_CurrentJob;
-    JobPipeLine*m_PipeLine = nullptr; 
+    UniquePtr<Job> m_CurrentJob;
+    JobPipeLine *m_PipeLine = nullptr;
     std::mutex *m_Mutex = nullptr;
     std::condition_variable *m_Condition = nullptr;
 };
@@ -123,21 +125,21 @@ public:
     JobPipeLine(JobPipeLine &&) = delete;
     JobPipeLine &operator=(const JobPipeLine &) = delete;
 
-    void PushJob(std::unique_ptr<Job>& job);
-    bool PopJob(std::unique_ptr<Job>& job);
-    bool TransferInWorker(std::unique_ptr<Worker>& worker);
-    bool TransferInWorkers(std::vector<std::unique_ptr<Worker>>& workers);
-    bool TransferOutWorker(std::unique_ptr<Worker>& worker);
-    bool TransferOutAllWorkers(std::vector<std::unique_ptr<Worker>>& workers);
+    void PushJob(UniquePtr<Job> &job);
+    bool PopJob(UniquePtr<Job> &job);
+    bool TransferInWorker(UniquePtr<Worker> &worker);
+    bool TransferInWorkers(std::vector<UniquePtr<Worker>> &workers);
+    bool TransferOutWorker(UniquePtr<Worker> &worker);
+    bool TransferOutAllWorkers(std::vector<UniquePtr<Worker>> &workers);
     bool IsIdle();
     void SortJobs(ScheduleStrategy strategy);
-    bool BorrowWorker(JobPipeLine* pipeLine);
-    bool CallReturnWorker(JobPipeLine* pipeLine);
+    bool BorrowWorker(JobPipeLine *pipeLine);
+    bool CallReturnWorker(JobPipeLine *pipeLine);
 
 private:
     friend class Worker;
-    std::deque<std::unique_ptr<Job>> m_Jobs;
-    std::vector<std::unique_ptr<Worker>> m_Workers;
+    std::deque<UniquePtr<Job>> m_Jobs;
+    std::vector<UniquePtr<Worker>> m_Workers;
     std::vector<JobPipeLine *> m_PipeLinesBorrowed;
     std::mutex m_QueueMutex;
     std::mutex m_JobMutex;
@@ -154,7 +156,7 @@ public:
     uint32_t CreateNewPipeLine();
     bool DestroyPipeLine(uint32_t pipeLineID);
     void SortJobs(ScheduleStrategy strategy);
-    bool SubmitJob(std::unique_ptr<Job> &job, const uint32_t pipeLineID = 0);
+    bool SubmitJob(UniquePtr<Job> &job, const uint32_t pipeLineID = 0);
 
 public:
     static JobSystem *CreateJobSystem();
@@ -163,7 +165,7 @@ public:
 private:
     uint32_t m_MaxNumOfWorkers = std::thread::hardware_concurrency();
     uint32_t m_CurrentNumOfWorkers = 0;
-    std::vector<std::unique_ptr<JobPipeLine>> m_JobPipeLines;
+    std::vector<UniquePtr<JobPipeLine>> m_JobPipeLines;
     std::mutex m_Mutex;
 };
 
@@ -172,12 +174,12 @@ inline bool GetJobSystem(JobSystem **jobSystem);
 #ifdef MODULE_TEST
 inline void TestJobSystem()
 {
-    std::unique_ptr<JobSystem> jobSystem(JobSystem::CreateJobSystem());
+    UniquePtr<JobSystem> jobSystem(JobSystem::CreateJobSystem());
     for (int i = 0; i < 10000; i++)
     {
         std::string log = "Job " + std::to_string(i) + " executed\n";
-        std::unique_ptr<Job> job = std::make_unique<Job>([log]()
-                                                         { HLOG_INFO(log.c_str()); });
+        UniquePtr<Job> job = std::make_unique<Job>([log]()
+                                                   { HLOG_INFO(log.c_str()); });
         jobSystem->SubmitJob(job);
     }
     jobSystem->SortJobs(ScheduleStrategy::PRIORITY);

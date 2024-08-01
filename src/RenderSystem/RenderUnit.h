@@ -12,20 +12,20 @@ public:
     void Render() override {}
 
 private:
-    friend bool CompareWithRenderOrder(const std::shared_ptr<RenderUnit> &a, const std::shared_ptr<RenderUnit> &b);
+    friend bool CompareWithRenderOrder(const SharedPtr<RenderUnit> &a, const SharedPtr<RenderUnit> &b);
 
 private:
     uint32_t m_RenderOrder = 0;
 };
 
-inline bool CompareWithRenderOrder(const std::shared_ptr<RenderUnit> &a, const std::shared_ptr<RenderUnit> &b)
+inline bool CompareWithRenderOrder(const SharedPtr<RenderUnit> &a, const SharedPtr<RenderUnit> &b)
 {
     return a->m_RenderOrder < b->m_RenderOrder;
 }
 class RenderQueue
 {
 public:
-    void AddRenderUnit(std::shared_ptr<RenderUnit> renderUnit)
+    void AddRenderUnit(SharedPtr<RenderUnit> renderUnit)
     {
         m_RenderUnits.push_back(renderUnit);
     }
@@ -49,5 +49,5 @@ public:
     }
 
 private:
-    std::vector<std::shared_ptr<RenderUnit>> m_RenderUnits;
+    std::vector<SharedPtr<RenderUnit>> m_RenderUnits;
 };

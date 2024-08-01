@@ -10,7 +10,7 @@ public:
     virtual bool Init() = 0;
 
 protected:
-    std::unique_ptr<ID3D11_Buffer> m_Buffer;
+    UniquePtr<ID3D11_Buffer> m_Buffer;
 };
 
 template <typename DataBlock>

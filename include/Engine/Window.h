@@ -17,7 +17,7 @@ public:
     void CreateRenderWindow(const std::string &title, int width, int height) override;
     void DestroyRenderWindow() override;
     void SetTitle(const std::string &title) override;
-    std::string GetTitle() const {return m_Title;}
+    std::string GetTitle() const { return m_Title; }
     void SetSize(int width, int height) override;
     void SetVSync(bool vsync) override;
     void SetFullscreen(bool fullscreen) override;
@@ -25,7 +25,7 @@ public:
     void SetMouseCursorVisible(bool visible) override;
     void SetPosition(int x, int y) override;
     void SetIcon(const std::string &iconPath) override;
-    void SetClearColor(const MathLib::HVector4&color) override;
+    void SetClearColor(const MathLib::HVector4 &color) override;
     void Clear() override;
     void Display() override;
     bool IsOpen() const override;
@@ -36,14 +36,15 @@ public:
     bool IsVisible() const override;
     bool IsMouseCursorVisible() const override;
     MathLib::HVector2 GetPosition() const override;
-    void BindRenderSystem(std::shared_ptr<IRenderSystem> &renderSystem) override;
-    
+    void BindRenderSystem(SharedPtr<IRenderSystem> &renderSystem) override;
 
 public:
+    RenderSystemType GetRenderSystemType() const;
+
 private:
-    std::shared_ptr<IRenderSystem> m_RenderSystem;
-    std::shared_ptr<GLFWwindow> m_Window;
-    std::shared_ptr<ImguiWindowsFactory> m_ImguiWindowsFactory;
+    SharedPtr<IRenderSystem> m_RenderSystem;
+    SharedPtr<GLFWwindow> m_Window;
+    SharedPtr<ImguiWindowsFactory> m_ImguiWindowsFactory;
     std::string m_Title;
     int m_Width;
     int m_Height;
