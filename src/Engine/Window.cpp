@@ -1,5 +1,7 @@
 #include "Common/pch.h"
 #include "Engine/Window.h"
+#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include "../RenderSystem/imgui/imgui_impl_glfw.h"
@@ -58,6 +60,7 @@ public:
     ImguiWindowsFactory(SharedPtr<GLFWwindow> &window)
     {
         m_Window = window;
+        m_bIsInitialized = false;
     }
     void SetUp(const RenderSystemType &type)
     {
@@ -76,9 +79,11 @@ public:
         {
         case RenderSystemType::Vulkan:
             ImGui_ImplGlfw_InitForVulkan(m_Window.get(), true);
+            m_bIsInitialized = true;
             break;
         case RenderSystemType::OpenGL:
             ImGui_ImplGlfw_InitForOpenGL(m_Window.get(), true);
+            m_bIsInitialized = true;
             break;
         case RenderSystemType::DirectX11:
             break;
@@ -87,12 +92,20 @@ public:
         default:
             break;
         }
+        if (!m_bIsInitialized)
+        {
+            ImGui::DestroyContext();
+        }
     }
 
     void ShutDown()
     {
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
+        if (m_bIsInitialized)
+        {
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+            m_bIsInitialized = false;
+        }
     }
 
     void ReSet(const RenderSystemType &type)
@@ -107,6 +120,8 @@ public:
 
     void RenderWindows()
     {
+        if (!m_bIsInitialized)
+            return;
         ImGuiIO &io = ImGui::GetIO();
         (void)io;
         ImGui_ImplGlfw_NewFrame();
@@ -147,6 +162,7 @@ public:
 private:
     SharedPtr<GLFWwindow> m_Window;
     std::vector<SharedPtr<ImguiWindow>> m_Windows;
+    bool m_bIsInitialized;
 };
 
 EditorWindow::EditorWindow()

@@ -4,6 +4,8 @@
 #include "RenderTexture.h"
 #include "RenderBuffer.h"
 #include "RenderSystem.h"
+#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #define HASSERT_VK(x) HASSERT((x) == VK_SUCCESS)
@@ -120,7 +122,12 @@ inline bool VKRenderSystem::DestroyVKBuffer(VkBuffer &buffer, VkDeviceMemory &bu
 //////////////////////////////////////////////////////////////////////////VKRenderSystem Private//////////////////////////////////////////////////////////////////////////
 inline bool VKRenderSystem::_CreateInstance()
 {
-    std::vector<const char *> extensions;
+    //std::vector<const char *> extensions;
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
     extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     if (m_bEnableDebugUtils)
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

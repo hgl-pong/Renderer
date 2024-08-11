@@ -76,6 +76,23 @@ private:
 class VKRenderSystem : virtual public IRenderSystem
 {
 private:
+    class VKRenderSystemExtManager
+    {
+    private:
+        VKRenderSystemExtManager()
+        {
+        }
+        bool EnableExtensions(const char *name, bool enable);
+        bool EnableValidationLayers(const char *name, bool enable);
+        std::vector<const char *> GetAllExtensions();
+        std::vector<const char *> GetAllValidationLayers();
+
+    public:
+    private:
+        std::unordered_map<const char *, bool> m_Extensions;
+        std::unordered_map<const char *, bool> m_ValidationLayers;
+    };
+
     struct VKQueueFamilyIndices
     {
         uint32_t graphicsFamily = UINT32_MAX;
